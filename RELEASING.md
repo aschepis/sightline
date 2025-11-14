@@ -72,12 +72,14 @@ To enable automatic signing and notarization, you need to configure the followin
 GitHub secrets can be stored at the repository level or in an environment. The workflow is configured to use the **Release** environment.
 
 **Option 1: Using an Environment (Recommended)**
+
 1. Go to your repository on GitHub
 2. Click **Settings** → **Environments**
 3. Click **New environment** and name it `Release`
 4. Click **Add secret** under "Environment secrets" for each secret below
 
 **Option 2: Using Repository Secrets**
+
 1. Go to your repository on GitHub
 2. Click **Settings** → **Secrets and variables** → **Actions**
 3. Click **New repository secret** for each secret below
@@ -155,6 +157,32 @@ If you want to sign Windows executables (currently not implemented but can be ad
 - `WINDOWS_CERTIFICATE_BASE64`: Base64-encoded PFX certificate
 - `WINDOWS_CERTIFICATE_PASSWORD`: Certificate password
 
+## Testing Your Signing Setup Locally
+
+Before pushing to GitHub, test your certificate and signing setup locally using the provided test script:
+
+```bash
+# Export your certificate from Keychain Access as a .p12 file
+# Then run the test script:
+./test-signing.sh path/to/your/certificate.p12
+
+# The script will:
+# 1. Import your certificate to a test keychain
+# 2. Show available signing identities
+# 3. Build and sign the app
+# 4. Verify the signature
+# 5. Provide the exact values to use in GitHub secrets
+```
+
+**Quick identity check without building:**
+
+```bash
+# List all available signing identities in your keychain
+security find-identity -v -p codesigning
+
+# Copy the EXACT identity string (including quotes) for use in APPLE_SIGNING_IDENTITY
+```
+
 ## Platform-Specific Build Instructions
 
 ### macOS
@@ -214,6 +242,7 @@ done
 ```
 
 **Expected output for properly signed app:**
+
 - `codesign --verify`: No output (success)
 - `spctl --assess`: `dist/Deface.app: accepted`
 - `stapler validate`: `The validate action worked!` (if notarized)
