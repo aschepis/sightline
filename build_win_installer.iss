@@ -1,4 +1,20 @@
 #define MyAppVersion GetEnv("APP_VERSION")
+// If the version is empty, use a default
+#if MyAppVersion == ""
+  #define MyAppVersion "1.0.0"
+#endif
+
+// Helper to get a valid VersionInfoVersion (must be X.X.X.X)
+#define MyAppVersionInfoVersion StrReplace("{#MyAppVersion}", ".", ".", 3)
+#if (Pos(".", "{#MyAppVersion}") = 0)
+  #define MyAppVersionInfoVersion "{#MyAppVersion}.0.0.0"
+#elif (GetStringLength("{#MyAppVersion}") - GetStringLength(StrReplace("{#MyAppVersion}", ".", "")) = 1)
+  #define MyAppVersionInfoVersion "{#MyAppVersion}.0.0"
+#elif (GetStringLength("{#MyAppVersion}") - GetStringLength(StrReplace("{#MyAppVersion}", ".", "")) = 2)
+  #define MyAppVersionInfoVersion "{#MyAppVersion}.0"
+#else
+  #define MyAppVersionInfoVersion "{#MyAppVersion}"
+#endif
 #if MyAppVersion == ""
   #define MyAppVersion "1.0.0"
 #endif
