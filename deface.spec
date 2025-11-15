@@ -5,6 +5,8 @@ This spec is responsible for bundling the GUI *and* a small, internal
 `deface` separately.
 """
 
+from PyInstaller.utils.hooks import copy_metadata
+
 
 app_name = "Deface"
 bundle_id = "com.defaceapp.deface"
@@ -14,12 +16,16 @@ icon_file = "icon.png"
 
 block_cipher = None
 
+# Ensure package metadata is available at runtime for importlib.metadata,
+# particularly for imageio which queries its own distribution metadata.
+extra_datas = copy_metadata("imageio")
+
 
 a = Analysis(
     [entry_script, cli_entry_script],
     pathex=[],
     binaries=[],
-    datas=[],
+    datas=extra_datas,
     hiddenimports=["deface"],  # ensure deface Python package is collected
     hookspath=[],
     hooksconfig={},

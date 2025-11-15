@@ -202,5 +202,5 @@ dist:
 ### CLEANUP ###################################################################
 
 clean:
-	rm -rf build dist __pycache__ *.egg-info
+	rm -rf ./build ./dist ./__pycache__ *.egg-info
 	find . -name "__pycache__" -exec rm -rf {} +
