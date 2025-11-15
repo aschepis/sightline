@@ -139,9 +139,10 @@ def _find_deface_command() -> List[str]:
     """Locate the `deface` CLI command in both dev and bundled environments.
 
     Resolution order:
-      1. If `deface` is on PATH, use that.
-      2. If running from a PyInstaller bundle, look for a bundled `deface`
-         executable next to the main binary.
+      1. If running from a PyInstaller bundle, use a bundled `deface`
+         binary next to the main executable.
+      2. Otherwise (or as a fallback), use `deface` from PATH, as long
+         as it is not this GUI executable itself.
 
     Returns:
         A list representing the command prefix to invoke `deface`.
@@ -149,31 +150,58 @@ def _find_deface_command() -> List[str]:
     Raises:
         FileNotFoundError: If no suitable `deface` executable can be found.
     """
-    # 1. Prefer a system / environment deface if available
-    path_cmd = shutil.which("deface")
-    if path_cmd:
-        return [path_cmd]
-
-    # 2. Look for a bundled deface binary next to the main executable
     exe_path = Path(sys.executable).resolve()
 
-    candidates = []
-    if sys.platform == "win32":
-        candidates.append(exe_path.parent / "deface.exe")
-        candidates.append(exe_path.parent / "deface")
-    else:
-        # On macOS / Linux, we bundle a plain `deface` binary
-        # For macOS .app, sys.executable is .../Deface.app/Contents/MacOS/Deface
-        candidates.append(exe_path.parent / "deface")
+    # 1. When bundled, prefer a `deface` binary shipped next to the app
+    #    (e.g. dist/Deface/deface, Deface.app/Contents/MacOS/deface, or
+    #    Deface.app/Contents/Frameworks/deface on macOS).
+    is_bundled = getattr(sys, "_MEIPASS", None) is not None
+    if is_bundled:
+        candidates: List[Path] = []
 
-    for candidate in candidates:
-        if candidate.exists() and os.access(candidate, os.X_OK):
-            return [str(candidate)]
+        if sys.platform == "win32":
+            # PyInstaller one-folder / one-file style
+            candidates.append(exe_path.parent / "deface.exe")
+            candidates.append(exe_path.parent / "deface")
+        elif sys.platform == "darwin":
+            # macOS .app layout:
+            #   .../Deface.app/Contents/MacOS/Deface       (sys.executable)
+            #   .../Deface.app/Contents/Frameworks/deface  (bundled CLI)
+            contents_dir = exe_path.parent.parent
+            candidates.append(contents_dir / "Frameworks" / "deface")
+            candidates.append(exe_path.parent / "deface")
+        else:
+            # Linux / other POSIX layouts
+            candidates.append(exe_path.parent / "deface")
+
+        for candidate in candidates:
+            if candidate.exists() and os.access(candidate, os.X_OK):
+                logger.info(f"Using bundled deface binary: {candidate}")
+                return [str(candidate)]
+
+    # 2. Fallback to a `deface` found on PATH, but avoid resolving to
+    #    this GUI executable itself (which can happen on case-insensitive
+    #    filesystems where `Deface` == `deface`).
+    path_cmd = shutil.which("deface")
+    if path_cmd:
+        try:
+            if Path(path_cmd).resolve() != exe_path:
+                logger.info(f"Using deface from PATH: {path_cmd}")
+                return [path_cmd]
+            else:
+                logger.warning(
+                    "Resolved `deface` on PATH is the GUI executable itself; "
+                    "ignoring to avoid recursion."
+                )
+        except Exception:
+            # If anything goes wrong with samefile/resolve, still prefer PATH
+            logger.info(f"Using deface from PATH (fallback): {path_cmd}")
+            return [path_cmd]
 
     # Nothing found – raise a helpful error
     raise FileNotFoundError(
         "Could not find the 'deface' executable. "
-        "Please ensure it is installed (e.g. `pip install deface`) "
+        "Please ensure it is installed in your environment (e.g. `pip install deface`) "
         "or rebuild the app in an environment where `deface` is available."
     )
 
