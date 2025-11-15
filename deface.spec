@@ -5,6 +5,8 @@ This spec is responsible for bundling the GUI *and* a small, internal
 `deface` separately.
 """
 
+from PyInstaller.utils.hooks import copy_metadata, collect_data_files
+
 
 app_name = "Deface"
 bundle_id = "com.defaceapp.deface"
@@ -14,13 +16,23 @@ icon_file = "icon.png"
 
 block_cipher = None
 
+# Ensure package metadata and data files are available at runtime.
+# - imageio: needs distribution metadata for importlib.metadata.
+# - deface: ships ONNX models (e.g. centerface.onnx) as package data.
+extra_datas = copy_metadata("imageio")
+deface_datas = collect_data_files("deface")
+
 
 a = Analysis(
     [entry_script, cli_entry_script],
     pathex=[],
     binaries=[],
-    datas=[],
-    hiddenimports=["deface"],  # ensure deface Python package is collected
+    datas=extra_datas + deface_datas,
+    # Ensure the deface package and skimage internals used by it are collected.
+    hiddenimports=[
+        "deface",
+        "skimage._shared.geometry",
+    ],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -32,7 +44,10 @@ pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 
 gui_exe = EXE(
     pyz,
-    a.scripts,
+    # IMPORTANT: only the GUI entry script should be used as the main
+    # executable. Including `deface_cli_entry.py` here would cause the
+    # CLI to become the primary entry point of the app bundle.
+    [("main", entry_script, "PYSOURCE")],
     [],
     exclude_binaries=True,
     name=app_name,
@@ -45,14 +60,16 @@ gui_exe = EXE(
 
 # Standalone CLI executable that runs the deface library from the bundled
 # Python runtime. This will typically live next to the GUI binary, e.g.:
-#   macOS: Deface.app/Contents/MacOS/deface
-#   Win/Linux: dist/Deface/deface(.exe)
+#   macOS: Deface.app/Contents/MacOS/deface-cli
+#   Win/Linux: dist/Deface/deface-cli(.exe)
 cli_exe = EXE(
     pyz,
     [("deface_cli_entry", cli_entry_script, "PYSOURCE")],
     [],
     exclude_binaries=True,
-    name="deface",
+    # IMPORTANT: use a distinct name from the GUI executable, especially on
+    # case-insensitive filesystems (Deface vs deface collide there).
+    name="deface-cli",
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -60,7 +77,7 @@ cli_exe = EXE(
     console=True,  # CLI mode
 )
 
-# REQUIRED → collects libs, binaries, datas into a folder
+# OPTIONAL → one-folder layout (for CLI + debug use)
 coll = COLLECT(
     gui_exe,
     cli_exe,
@@ -74,6 +91,9 @@ coll = COLLECT(
 )
 
 # macOS .app bundle build
+# Use the full collected bundle (so libpython and all deps are present),
+# but note that the GUI EXE is the one named "Deface", so it becomes the
+# CFBundleExecutable for the .app.
 app = BUNDLE(
     coll,
     name=f"{app_name}.app",

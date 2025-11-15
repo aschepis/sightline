@@ -6,6 +6,7 @@ embedded Python runtime as the GUI application.
 """
 
 import sys
+import builtins
 
 from deface.deface import main as deface_main
 
@@ -22,7 +23,35 @@ def _patch_argv0_for_windows() -> None:
 
 def main() -> int:
     _patch_argv0_for_windows()
-    return deface_main()
+    # When the `deface-cli` executable is used as the Python interpreter for
+    # multiprocessing's 'spawn' start method, it will be invoked with flags
+    # like ``-B -S -I -c 'from multiprocessing.spawn import spawn_main; ...'``.
+    # In that case we must behave like a normal Python interpreter instead of
+    # running the deface CLI.
+    argv = sys.argv[1:]
+    if "-c" in argv:
+        idx = argv.index("-c")
+        if idx + 1 < len(argv) and "multiprocessing.spawn" in argv[idx + 1]:
+            from multiprocessing.spawn import spawn_main
+
+            spawn_main()
+            return 0
+    # Some versions of the upstream `deface` CLI use the REPL-style ``exit()``
+    # helper provided by the stdlib ``site`` module instead of ``sys.exit``.
+    # In a frozen app, that helper may not be defined, so we provide a
+    # compatible alias here.
+    if not hasattr(builtins, "exit"):
+        builtins.exit = sys.exit  # type: ignore[attr-defined]
+    if not hasattr(builtins, "quit"):
+        builtins.quit = sys.exit  # type: ignore[attr-defined]
+    # The upstream `deface` CLI may either return an int or call sys.exit().
+    # We normalize both behaviors into an integer exit code for PyInstaller.
+    try:
+        code = deface_main()
+    except SystemExit as exc:  # pragma: no cover - mirrors console_script
+        return int(exc.code or 0)
+
+    return int(code or 0)
 
 
 if __name__ == "__main__":
