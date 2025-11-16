@@ -27,15 +27,18 @@ a = Analysis(
     [entry_script, cli_entry_script],
     pathex=[],
     binaries=[],
-    datas=extra_datas + deface_datas,
+    datas=extra_datas + deface_datas + [(icon_file, '.')],
     # Ensure the deface package and skimage internals used by it are collected.
     hiddenimports=[
         "deface",
         "skimage._shared.geometry",
+        "dialogs",
+        "config_manager",
+        "progress_parser",
     ],
     hookspath=[],
     hooksconfig={},
-    runtime_hooks=[],
+    runtime_hooks=['pyi_rth_tkinter.py'],
     excludes=[],
     noarchive=False,
 )
