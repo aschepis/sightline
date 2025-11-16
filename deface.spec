@@ -5,6 +5,9 @@ This spec is responsible for bundling the GUI *and* a small, internal
 `deface` separately.
 """
 
+import sys
+import os
+from pathlib import Path
 from PyInstaller.utils.hooks import copy_metadata, collect_data_files
 
 
@@ -22,20 +25,43 @@ block_cipher = None
 extra_datas = copy_metadata("imageio")
 deface_datas = collect_data_files("deface")
 
+# Collect Tcl/Tk library files for tkinter
+tcl_tk_datas = []
+if sys.platform == 'darwin':
+    # Find Tcl/Tk libraries from Python prefix
+    tcl_lib = Path(sys.prefix) / 'lib' / 'tcl8.6'
+    tk_lib = Path(sys.prefix) / 'lib' / 'tk8.6'
+
+    if tcl_lib.exists():
+        tcl_tk_datas.append((str(tcl_lib), 'tcl'))
+        print(f"✓ Found Tcl library at: {tcl_lib}")
+    else:
+        print(f"✗ Tcl library not found at: {tcl_lib}")
+
+    if tk_lib.exists():
+        tcl_tk_datas.append((str(tk_lib), 'tk'))
+        print(f"✓ Found Tk library at: {tk_lib}")
+    else:
+        print(f"✗ Tk library not found at: {tk_lib}")
+
 
 a = Analysis(
     [entry_script, cli_entry_script],
     pathex=[],
     binaries=[],
-    datas=extra_datas + deface_datas,
-    # Ensure the deface package and skimage internals used by it are collected.
+    datas=extra_datas + deface_datas + [(icon_file, '.')] + tcl_tk_datas,
     hiddenimports=[
         "deface",
         "skimage._shared.geometry",
+        "dialogs",
+        "config_manager",
+        "progress_parser",
+        "tkinter",
+        "_tkinter",
     ],
     hookspath=[],
     hooksconfig={},
-    runtime_hooks=[],
+    runtime_hooks=['pyi_rth_tkinter.py'],
     excludes=[],
     noarchive=False,
 )

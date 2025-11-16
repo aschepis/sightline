@@ -19,6 +19,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from progress_parser import ProgressParser
 from config_manager import load_config, save_config, get_default_config
+from dialogs import LogDialog, ConfigDialog
 
 try:
     import customtkinter as ctk
@@ -48,8 +49,31 @@ except ImportError:
 # Version information
 __version__ = "1.0.0"
 
-# Configure logging (will be updated by parse_args if called)
-# Default: console only
+# Application constants
+WINDOW_WIDTH = 1100
+WINDOW_HEIGHT = 750
+FILE_LIST_HEIGHT = 300
+MAX_FILENAME_DISPLAY_LENGTH = 35
+MAX_BATCH_SIZE = 8
+PROGRESS_CHECK_INTERVAL_MS = 50
+
+# Supported file extensions
+SUPPORTED_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.mp4', '.avi', '.mov', '.mkv'}
+IMAGE_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.bmp', '.tiff'}
+VIDEO_EXTENSIONS = {'.mp4', '.avi', '.mov', '.mkv'}
+
+# Status colors for file processing
+STATUS_COLORS = {
+    'pending': ('gray', 'Pending'),
+    'processing': ('blue', 'Processing'),
+    'success': ('green', 'Success'),
+    'failed': ('red', 'Failed')
+}
+
+# Keywords for error detection in logs
+ERROR_KEYWORDS = ['error', 'warning', 'exception', 'failed', 'traceback']
+
+# Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -88,12 +112,13 @@ def parse_args():
     )
     return parser.parse_args()
 
+
 # Set customtkinter appearance mode and color theme
-ctk.set_appearance_mode("System")  # Modes: "System" (default), "Dark", "Light"
-ctk.set_default_color_theme("blue")  # Themes: "blue" (default), "green", "dark-blue"
+ctk.set_appearance_mode("System")
+ctk.set_default_color_theme("blue")
 
 
-def build_deface_args(config: Dict[str, Any]) -> list:
+def build_deface_args(config: Dict[str, Any]) -> List[str]:
     """Build command-line arguments from configuration dictionary.
 
     Args:
@@ -230,15 +255,8 @@ def run_deface(
         FileNotFoundError: If the deface command cannot be found.
         OSError: If the subprocess cannot be started.
     """
-    # Build base command (deface executable + required args)
     cmd = _find_deface_command()
-    cmd.extend(
-        [
-            input_path,
-            "--output",
-            output_path,
-        ]
-    )
+    cmd.extend([input_path, "--output", output_path])
 
     if config:
         cmd.extend(build_deface_args(config))
@@ -332,439 +350,6 @@ def validate_paths(input_path: str, output_dir: str) -> Tuple[bool, Optional[str
     return True, None
 
 
-class LogDialog(ctk.CTkToplevel):
-    """Dialog for displaying error logs."""
-
-    def __init__(self, parent, filename: str, log_text: str):
-        super().__init__(parent)
-
-        self.title(f"Error Logs - {filename}")
-        self.geometry("800x600")
-        self.resizable(True, True)
-
-        # Make dialog modal
-        self.transient(parent)
-        self.grab_set()
-
-        # Create widgets
-        self._create_widgets(log_text)
-
-        # Center dialog on parent
-        self._center_on_parent()
-
-        # Focus on dialog
-        self.focus()
-
-    def _center_on_parent(self):
-        """Center the dialog on its parent window."""
-        self.update_idletasks()
-
-        parent_x = self.master.winfo_x()
-        parent_y = self.master.winfo_y()
-        parent_width = self.master.winfo_width()
-        parent_height = self.master.winfo_height()
-
-        dialog_width = self.winfo_width()
-        dialog_height = self.winfo_height()
-
-        x = parent_x + (parent_width // 2) - (dialog_width // 2)
-        y = parent_y + (parent_height // 2) - (dialog_height // 2)
-
-        self.geometry(f"+{x}+{y}")
-
-    def _create_widgets(self, log_text: str):
-        """Create and layout all dialog widgets."""
-        # Main container
-        main_frame = ctk.CTkFrame(self)
-        main_frame.pack(fill="both", expand=True, padx=20, pady=20)
-
-        # Title
-        title_label = ctk.CTkLabel(
-            main_frame,
-            text="Error Logs",
-            font=ctk.CTkFont(size=20, weight="bold"),
-        )
-        title_label.pack(pady=(0, 10))
-
-        # Textbox for logs
-        log_textbox = ctk.CTkTextbox(
-            main_frame,
-            font=("Courier", 11),
-            wrap="word",
-        )
-        log_textbox.pack(fill="both", expand=True, pady=(0, 10))
-        log_textbox.insert("1.0", log_text)
-        log_textbox.configure(state="disabled")  # Make read-only
-
-        # Close button
-        button_frame = ctk.CTkFrame(main_frame)
-        button_frame.pack(fill="x")
-
-        close_btn = ctk.CTkButton(
-            button_frame,
-            text="Close",
-            command=self.destroy,
-            width=100,
-        )
-        close_btn.pack(side="right", padx=10)
-
-        # Bind Escape key to close
-        self.bind("<Escape>", lambda e: self.destroy())
-
-
-class ConfigDialog(ctk.CTkToplevel):
-    """Configuration dialog for deface options."""
-
-    def __init__(self, parent, config: Dict[str, Any]):
-        super().__init__(parent)
-
-        self.title("Deface Configuration")
-        self.geometry("600x650")
-        self.resizable(False, False)
-
-        # Make dialog modal
-        self.transient(parent)
-        self.grab_set()
-
-        # Store configuration
-        self.config = config.copy()
-        self.result: Optional[Dict[str, Any]] = None
-
-        # Create widgets
-        self._create_widgets()
-
-        # Center dialog on parent
-        self._center_on_parent()
-
-        # Focus on dialog
-        self.focus()
-
-    def _center_on_parent(self):
-        """Center the dialog on its parent window."""
-        self.update_idletasks()
-
-        parent_x = self.master.winfo_x()
-        parent_y = self.master.winfo_y()
-        parent_width = self.master.winfo_width()
-        parent_height = self.master.winfo_height()
-
-        dialog_width = self.winfo_width()
-        dialog_height = self.winfo_height()
-
-        x = parent_x + (parent_width // 2) - (dialog_width // 2)
-        y = parent_y + (parent_height // 2) - (dialog_height // 2)
-
-        self.geometry(f"+{x}+{y}")
-
-    def _create_widgets(self):
-        """Create and layout all dialog widgets."""
-        # Main container with scrollable frame
-        main_frame = ctk.CTkFrame(self)
-        main_frame.pack(fill="both", expand=True, padx=20, pady=20)
-
-        # Title
-        title_label = ctk.CTkLabel(
-            main_frame,
-            text="Deface Configuration",
-            font=ctk.CTkFont(size=20, weight="bold"),
-        )
-        title_label.pack(pady=(0, 20))
-
-        # Scrollable frame for options
-        scrollable_frame = ctk.CTkScrollableFrame(main_frame)
-        scrollable_frame.pack(fill="both", expand=True, pady=(0, 20))
-
-        # Detection threshold
-        thresh_frame = ctk.CTkFrame(scrollable_frame)
-        thresh_frame.pack(fill="x", pady=5, padx=10)
-
-        ctk.CTkLabel(
-            thresh_frame, text="Detection Threshold:", font=ctk.CTkFont(size=12)
-        ).pack(anchor="w", padx=10, pady=(10, 5))
-
-        ctk.CTkLabel(
-            thresh_frame,
-            text="Tune this to trade off between false positive and false negative rate",
-            font=ctk.CTkFont(size=10),
-            text_color="gray",
-        ).pack(anchor="w", padx=10, pady=(0, 5))
-
-        thresh_entry = ctk.CTkEntry(thresh_frame, width=150)
-        thresh_entry.insert(0, str(self.config.get("thresh", 0.2)))
-        thresh_entry.pack(anchor="w", padx=10, pady=(0, 10))
-        self.thresh_entry = thresh_entry
-
-        # Scale (WxH)
-        scale_frame = ctk.CTkFrame(scrollable_frame)
-        scale_frame.pack(fill="x", pady=5, padx=10)
-
-        ctk.CTkLabel(scale_frame, text="Scale (WxH):", font=ctk.CTkFont(size=12)).pack(
-            anchor="w", padx=10, pady=(10, 5)
-        )
-
-        ctk.CTkLabel(
-            scale_frame,
-            text="Downscale images for network inference (e.g., 640x360). Leave empty for no scaling.",
-            font=ctk.CTkFont(size=10),
-            text_color="gray",
-        ).pack(anchor="w", padx=10, pady=(0, 5))
-
-        scale_entry = ctk.CTkEntry(
-            scale_frame, width=150, placeholder_text="e.g., 640x360"
-        )
-        if self.config.get("scale"):
-            scale_entry.insert(0, self.config["scale"])
-        scale_entry.pack(anchor="w", padx=10, pady=(0, 10))
-        self.scale_entry = scale_entry
-
-        # Use boxes
-        boxes_frame = ctk.CTkFrame(scrollable_frame)
-        boxes_frame.pack(fill="x", pady=5, padx=10)
-
-        ctk.CTkLabel(boxes_frame, text="Use Boxes:", font=ctk.CTkFont(size=12)).pack(
-            anchor="w", padx=10, pady=(10, 5)
-        )
-
-        ctk.CTkLabel(
-            boxes_frame,
-            text="Use boxes instead of ellipse masks",
-            font=ctk.CTkFont(size=10),
-            text_color="gray",
-        ).pack(anchor="w", padx=10, pady=(0, 5))
-
-        boxes_var = tk.BooleanVar(value=self.config.get("boxes", False))
-        boxes_checkbox = ctk.CTkCheckBox(
-            boxes_frame, text="Use boxes", variable=boxes_var
-        )
-        boxes_checkbox.pack(anchor="w", padx=10, pady=(0, 10))
-        self.boxes_var = boxes_var
-
-        # Mask scale
-        mask_scale_frame = ctk.CTkFrame(scrollable_frame)
-        mask_scale_frame.pack(fill="x", pady=5, padx=10)
-
-        ctk.CTkLabel(
-            mask_scale_frame, text="Mask Scale Factor:", font=ctk.CTkFont(size=12)
-        ).pack(anchor="w", padx=10, pady=(10, 5))
-
-        ctk.CTkLabel(
-            mask_scale_frame,
-            text="Scale factor for face masks to ensure complete face coverage",
-            font=ctk.CTkFont(size=10),
-            text_color="gray",
-        ).pack(anchor="w", padx=10, pady=(0, 5))
-
-        mask_scale_entry = ctk.CTkEntry(mask_scale_frame, width=150)
-        mask_scale_entry.insert(0, str(self.config.get("mask_scale", 1.3)))
-        mask_scale_entry.pack(anchor="w", padx=10, pady=(0, 10))
-        self.mask_scale_entry = mask_scale_entry
-
-        # Replace with mode
-        replace_frame = ctk.CTkFrame(scrollable_frame)
-        replace_frame.pack(fill="x", pady=5, padx=10)
-
-        ctk.CTkLabel(
-            replace_frame, text="Anonymization Mode:", font=ctk.CTkFont(size=12)
-        ).pack(anchor="w", padx=10, pady=(10, 5))
-
-        ctk.CTkLabel(
-            replace_frame,
-            text="Filter mode for face regions",
-            font=ctk.CTkFont(size=10),
-            text_color="gray",
-        ).pack(anchor="w", padx=10, pady=(0, 5))
-
-        replace_options = ["blur", "solid", "none", "img", "mosaic"]
-        replace_var = tk.StringVar(value=self.config.get("replacewith", "blur"))
-        replace_menu = ctk.CTkOptionMenu(
-            replace_frame, values=replace_options, variable=replace_var, width=150
-        )
-        replace_menu.pack(anchor="w", padx=10, pady=(0, 10))
-        self.replace_var = replace_var
-
-        # Keep audio
-        audio_frame = ctk.CTkFrame(scrollable_frame)
-        audio_frame.pack(fill="x", pady=5, padx=10)
-
-        ctk.CTkLabel(audio_frame, text="Keep Audio:", font=ctk.CTkFont(size=12)).pack(
-            anchor="w", padx=10, pady=(10, 5)
-        )
-
-        ctk.CTkLabel(
-            audio_frame,
-            text="Keep audio from video source file (only applies to videos)",
-            font=ctk.CTkFont(size=10),
-            text_color="gray",
-        ).pack(anchor="w", padx=10, pady=(0, 5))
-
-        audio_var = tk.BooleanVar(value=self.config.get("keep_audio", True))
-        audio_checkbox = ctk.CTkCheckBox(
-            audio_frame, text="Keep audio", variable=audio_var
-        )
-        audio_checkbox.pack(anchor="w", padx=10, pady=(0, 10))
-        self.audio_var = audio_var
-
-        # Keep metadata
-        metadata_frame = ctk.CTkFrame(scrollable_frame)
-        metadata_frame.pack(fill="x", pady=5, padx=10)
-
-        ctk.CTkLabel(
-            metadata_frame, text="Keep Metadata:", font=ctk.CTkFont(size=12)
-        ).pack(anchor="w", padx=10, pady=(10, 5))
-
-        ctk.CTkLabel(
-            metadata_frame,
-            text="Keep metadata of the original image",
-            font=ctk.CTkFont(size=10),
-            text_color="gray",
-        ).pack(anchor="w", padx=10, pady=(0, 5))
-
-        metadata_var = tk.BooleanVar(value=self.config.get("keep_metadata", True))
-        metadata_checkbox = ctk.CTkCheckBox(
-            metadata_frame, text="Keep metadata", variable=metadata_var
-        )
-        metadata_checkbox.pack(anchor="w", padx=10, pady=(0, 10))
-        self.metadata_var = metadata_var
-
-        # Batch size
-        batch_size_frame = ctk.CTkFrame(scrollable_frame)
-        batch_size_frame.pack(fill="x", pady=5, padx=10)
-
-        ctk.CTkLabel(
-            batch_size_frame, text="Batch Size:", font=ctk.CTkFont(size=12)
-        ).pack(anchor="w", padx=10, pady=(10, 5))
-
-        ctk.CTkLabel(
-            batch_size_frame,
-            text="Number of files to process concurrently (1-8)",
-            font=ctk.CTkFont(size=10),
-            text_color="gray",
-        ).pack(anchor="w", padx=10, pady=(0, 5))
-
-        batch_size_entry = ctk.CTkEntry(batch_size_frame, width=150)
-        batch_size_entry.insert(0, str(self.config.get("batch_size", 1)))
-        batch_size_entry.pack(anchor="w", padx=10, pady=(0, 10))
-        self.batch_size_entry = batch_size_entry
-
-        # Buttons
-        button_frame = ctk.CTkFrame(main_frame)
-        button_frame.pack(fill="x", pady=(0, 0))
-
-        ok_btn = ctk.CTkButton(button_frame, text="OK", command=self._on_ok, width=100)
-        ok_btn.pack(side="right", padx=10)
-
-        cancel_btn = ctk.CTkButton(
-            button_frame,
-            text="Cancel",
-            command=self._on_cancel,
-            width=100,
-            fg_color="gray",
-        )
-        cancel_btn.pack(side="right", padx=10)
-
-        # Bind Enter key to OK
-        self.bind("<Return>", lambda e: self._on_ok())
-        self.bind("<Escape>", lambda e: self._on_cancel())
-
-    def _on_ok(self):  # noqa: C901
-        """Handle OK button click."""
-        try:
-            # Validate and collect configuration
-            config: Dict[str, Any] = {}
-
-            # Thresh
-            try:
-                thresh_val = float(self.thresh_entry.get().strip())
-                if thresh_val < 0 or thresh_val > 1:
-                    messagebox.showerror(
-                        "Error", "Detection threshold must be between 0 and 1."
-                    )
-                    return
-                config["thresh"] = thresh_val
-            except ValueError:
-                messagebox.showerror(
-                    "Error", "Detection threshold must be a valid number."
-                )
-                return
-
-            # Scale
-            scale_val = self.scale_entry.get().strip()
-            if scale_val:
-                # Validate format (WxH)
-                if "x" not in scale_val.lower():
-                    messagebox.showerror(
-                        "Error", "Scale must be in format WxH (e.g., 640x360)."
-                    )
-                    return
-                try:
-                    parts = scale_val.lower().split("x")
-                    if len(parts) != 2:
-                        raise ValueError
-                    int(parts[0])
-                    int(parts[1])
-                except ValueError:
-                    messagebox.showerror(
-                        "Error",
-                        "Scale must be in format WxH with valid integers (e.g., 640x360).",
-                    )
-                    return
-                config["scale"] = scale_val
-
-            # Boxes
-            config["boxes"] = self.boxes_var.get()
-
-            # Mask scale
-            try:
-                mask_scale_val = float(self.mask_scale_entry.get().strip())
-                if mask_scale_val <= 0:
-                    messagebox.showerror(
-                        "Error", "Mask scale factor must be greater than 0."
-                    )
-                    return
-                config["mask_scale"] = mask_scale_val
-            except ValueError:
-                messagebox.showerror(
-                    "Error", "Mask scale factor must be a valid number."
-                )
-                return
-
-            # Replace with
-            config["replacewith"] = self.replace_var.get()
-
-            # Keep audio
-            config["keep_audio"] = self.audio_var.get()
-
-            # Keep metadata
-            config["keep_metadata"] = self.metadata_var.get()
-
-            # Batch size
-            try:
-                batch_size_val = int(self.batch_size_entry.get().strip())
-                if batch_size_val < 1 or batch_size_val > 8:
-                    messagebox.showerror(
-                        "Error", "Batch size must be between 1 and 8."
-                    )
-                    return
-                config["batch_size"] = batch_size_val
-            except ValueError:
-                messagebox.showerror(
-                    "Error", "Batch size must be a valid integer."
-                )
-                return
-
-            self.result = config
-            self.destroy()
-
-        except Exception as e:
-            logger.error(f"Error validating configuration: {e}")
-            messagebox.showerror("Error", f"Error validating configuration: {str(e)}")
-
-    def _on_cancel(self):
-        """Handle Cancel button click."""
-        self.result = None
-        self.destroy()
-
-
 # Create a base class that supports DnD if available
 if TkinterDnD:
     class DefaceAppBase(ctk.CTk, TkinterDnD.Tk):
@@ -797,10 +382,9 @@ class DefaceApp(DefaceAppBase):
                 traceback.print_exc()
 
         self.title(f"Deface — Batch Processing v{__version__}")
-        self.geometry("1100x750")
+        self.geometry(f"{WINDOW_WIDTH}x{WINDOW_HEIGHT}")
 
-        # Set application icon
-        self.icon_image = None  # Keep reference to prevent garbage collection
+        self.icon_image = None
         try:
             # Try icon.ico first (better for Windows), then fall back to icon.png
             icon_ico_path = get_resource_path("icon.ico")
@@ -829,31 +413,21 @@ class DefaceApp(DefaceAppBase):
         self.progress_parser = ProgressParser()
 
         # File queue for batch processing
-        self.file_queue: list = []  # List of dicts with file info
-        self.currently_processing: set = set()  # Set of file paths currently being processed
+        self.file_queue: List[Dict[str, Any]] = []
+        self.currently_processing: set[str] = set()
         self.is_processing: bool = False
         self.stop_requested: bool = False
-        self.file_widgets: dict = {}  # Maps file path to UI widgets
-        self.active_processes: dict = {}  # Maps file path to subprocess.Popen
+        self.file_widgets: Dict[str, Dict[str, Any]] = {}
+        self.active_processes: Dict[str, subprocess.Popen] = {}
 
-        # Load configuration from disk
         saved_config = load_config()
         default_config = get_default_config()
 
-        # Configuration (defaults match deface defaults, with keep-audio and keep-metadata True)
-        # Load deface config from saved config or use defaults
         self.config: Dict = saved_config.get("deface_config", default_config["deface_config"]).copy()
-
-        # Store saved output directory for use in _create_widgets
         self.saved_output_directory = saved_config.get("output_directory")
 
-        # Create UI elements
         self._create_widgets()
-
-        # Bring window to foreground
         self._bring_to_front()
-
-        # Schedule periodic check for process output from queue
         self._check_process_output()
 
     def _create_widgets(self):
@@ -924,7 +498,7 @@ class DefaceApp(DefaceAppBase):
 
         # Scrollable frame for file list
         self.files_list_frame = ctk.CTkScrollableFrame(
-            files_frame, height=300, fg_color="transparent"
+            files_frame, height=FILE_LIST_HEIGHT, fg_color="transparent"
         )
         self.files_list_frame.pack(fill="both", expand=True, padx=10, pady=(0, 10))
 
@@ -999,10 +573,9 @@ class DefaceApp(DefaceAppBase):
         checkbox = ctk.CTkCheckBox(row_frame, text="", variable=checkbox_var, width=30)
         checkbox.pack(side="left", padx=5)
 
-        # Filename label (left-aligned, truncated if too long)
         filename = os.path.basename(file_path)
-        if len(filename) > 35:
-            display_name = filename[:32] + "..."
+        if len(filename) > MAX_FILENAME_DISPLAY_LENGTH:
+            display_name = filename[:MAX_FILENAME_DISPLAY_LENGTH - 3] + "..."
         else:
             display_name = filename
 
@@ -1110,27 +683,16 @@ class DefaceApp(DefaceAppBase):
         status = file_info['status']
         progress = file_info['progress']
 
-        # Update status label and color
-        status_colors = {
-            'pending': ('gray', 'Pending'),
-            'processing': ('blue', 'Processing'),
-            'success': ('green', 'Success'),
-            'failed': ('red', 'Failed')
-        }
-
-        color, text = status_colors.get(status, ('gray', 'Unknown'))
+        color, text = STATUS_COLORS.get(status, ('gray', 'Unknown'))
         widgets['status_label'].configure(text=text, text_color=color)
-
-        # Update progress bar
         widgets['progress_bar'].set(progress)
 
-        # Disable checkbox if file is currently processing
+        # Disable checkbox while processing
         if status == 'processing':
             widgets['checkbox'].configure(state="disabled")
         else:
             widgets['checkbox'].configure(state="normal")
 
-        # Show logs button only for failed files
         if status == 'failed' and file_info.get('error_log'):
             widgets['show_logs_btn'].pack(side="left", padx=5)
         else:
@@ -1177,7 +739,7 @@ class DefaceApp(DefaceAppBase):
         if filenames:
             self._add_files_to_queue(filenames)
 
-    def _add_files_to_queue(self, file_paths: tuple):
+    def _add_files_to_queue(self, file_paths: Tuple[str, ...]):
         """Add multiple files to the processing queue.
 
         Args:
@@ -1367,7 +929,6 @@ class DefaceApp(DefaceAppBase):
             logger.info(f"Parsed {len(file_paths)} path(s) from drop event")
 
             # Filter to only include files (not directories) and valid extensions
-            valid_extensions = {'.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.mp4', '.avi', '.mov', '.mkv'}
             valid_files = []
 
             for file_path in file_paths:
@@ -1386,12 +947,12 @@ class DefaceApp(DefaceAppBase):
 
                 if path_obj.is_dir():
                     # If it's a directory, recursively find all valid files
-                    for ext in valid_extensions:
+                    for ext in SUPPORTED_EXTENSIONS:
                         valid_files.extend(path_obj.rglob(f"*{ext}"))
                         valid_files.extend(path_obj.rglob(f"*{ext.upper()}"))
                 elif path_obj.is_file():
                     # Check if it's a valid file extension
-                    if path_obj.suffix.lower() in valid_extensions:
+                    if path_obj.suffix.lower() in SUPPORTED_EXTENSIONS:
                         valid_files.append(file_path)
                     else:
                         logger.info(f"Skipping unsupported file type: {file_path}")
@@ -1447,19 +1008,19 @@ class DefaceApp(DefaceAppBase):
         }
         save_config(config_to_save)
 
-    def _on_output_directory_changed(self, event=None):
+    def _on_output_directory_changed(self, event: Optional[Any] = None):
         """Handle output directory change event.
 
         Args:
-            event: Optional event parameter.
+            event: Optional event parameter for compatibility with bindings.
         """
         self._save_config()
 
-    def _browse_output_folder(self, event=None):
+    def _browse_output_folder(self, event: Optional[Any] = None):
         """Open folder dialog to select output directory.
 
         Args:
-            event: Optional event parameter (for compatibility with bindings).
+            event: Optional event parameter for compatibility with bindings.
         """
         # Ensure we have focus before opening dialog
         self.focus()
@@ -1718,52 +1279,52 @@ class DefaceApp(DefaceAppBase):
         finally:
             stream.close()
 
-    def _check_process_output(self):  # noqa: C901
+    def _handle_stream_message(self, line: str, file_path: str):
+        """Handle stdout/stderr message from subprocess.
+
+        Args:
+            line: Output line from subprocess.
+            file_path: Path to the file being processed.
+        """
+        self._update_file_progress(line, file_path)
+        self._append_to_file_log(file_path, line)
+
+    def _handle_queue_message(self, message: Tuple):
+        """Handle a single message from the output queue.
+
+        Args:
+            message: Tuple containing (message_type, *args).
+        """
+        msg_type = message[0]
+
+        if msg_type in ("stdout", "stderr"):
+            _, line, file_path = message
+            self._handle_stream_message(line, file_path)
+        elif msg_type == "file_update":
+            file_path = message[1]
+            self._update_file_row(file_path)
+        elif msg_type == "batch_done":
+            logger.info("Batch processing completed")
+            self._finalize_batch_processing()
+        elif msg_type == "batch_error":
+            error_msg = message[1]
+            logger.error(f"Batch processing error: {error_msg}")
+            self._finalize_batch_processing()
+
+    def _check_process_output(self):
         """Periodically check for process output from queue and update UI."""
         try:
-            # Process all available messages from the queue
             while True:
                 try:
                     message = self.output_queue.get_nowait()
-                    msg_type = message[0]
-
-                    if msg_type == "stdout":
-                        _, line, file_path = message
-                        # Try to parse progress from stdout
-                        self._update_file_progress(line, file_path)
-                        # Store output for error logging if needed
-                        self._append_to_file_log(file_path, line)
-
-                    elif msg_type == "stderr":
-                        _, line, file_path = message
-                        # Try to parse progress from stderr (tqdm often outputs to stderr)
-                        self._update_file_progress(line, file_path)
-                        # Store output for error logging
-                        self._append_to_file_log(file_path, line)
-
-                    elif msg_type == "file_update":
-                        file_path = message[1]
-                        # Update the file row display
-                        self._update_file_row(file_path)
-
-                    elif msg_type == "batch_done":
-                        # All files processed
-                        logger.info("Batch processing completed")
-                        self._finalize_batch_processing()
-
-                    elif msg_type == "batch_error":
-                        error_msg = message[1]
-                        logger.error(f"Batch processing error: {error_msg}")
-                        self._finalize_batch_processing()
-
+                    self._handle_queue_message(message)
                 except queue.Empty:
                     break
         except Exception as e:
             logger.error(f"Error processing output queue: {e}")
             self._finalize_batch_processing()
 
-        # Schedule next check
-        self.after(50, self._check_process_output)
+        self.after(PROGRESS_CHECK_INTERVAL_MS, self._check_process_output)
 
     def _update_file_progress(self, line: str, file_path: str):
         """Update progress bar for a specific file from a line of output.
@@ -1817,7 +1378,7 @@ class DefaceApp(DefaceAppBase):
             if file_info['path'] == file_path:
                 # Only append if it looks like an error or warning
                 line_lower = line.lower()
-                if any(keyword in line_lower for keyword in ['error', 'warning', 'exception', 'failed', 'traceback']):
+                if any(keyword in line_lower for keyword in ERROR_KEYWORDS):
                     file_info['error_log'] += line
                 break
 
@@ -1867,7 +1428,7 @@ class DefaceApp(DefaceAppBase):
             self.destroy()
 
 
-def main() -> None:
+def main():
     """Main entry point for the application."""
     # Parse command-line arguments
     args = parse_args()

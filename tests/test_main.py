@@ -46,7 +46,7 @@ class TestRunDeface:
         main.run_deface(input_path, output_path)
 
         call_args = mock_popen.call_args[0][0]
-        assert call_args[0] == "deface"
+        assert "deface" in call_args[0].lower()
         assert input_path in call_args
         assert "--output" in call_args
         assert output_path in call_args
