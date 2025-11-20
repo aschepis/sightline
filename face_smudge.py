@@ -6,7 +6,10 @@ to blur faces in real-time during video playback by clicking and dragging.
 
 import logging
 import os
+import shutil
+import subprocess
 import sys
+import tempfile
 import threading
 import time
 import uuid
@@ -1335,7 +1338,7 @@ class FaceSmudgeWindow(ctk.CTkToplevel):
         # Create simple settings dialog
         settings_window = ctk.CTkToplevel(self)
         settings_window.title("Face Smudge Settings")
-        settings_window.geometry("400x300")
+        settings_window.geometry("400x500")
         settings_window.transient(self)
         settings_window.grab_set()
 
@@ -1485,53 +1488,207 @@ class FaceSmudgeWindow(ctk.CTkToplevel):
                 except (OSError, PermissionError) as e:
                     raise ValueError(f"Cannot write to output location: {str(e)}")
 
-                # Open video writer
-                fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-                writer = cv2.VideoWriter(filename, fourcc, metadata.fps, (metadata.width, metadata.height))
+                # Create temporary video file first
+                temp_video_fd, temp_video = tempfile.mkstemp(suffix=".mp4", prefix="deface_smudge_")
+                os.close(temp_video_fd)  # Close file descriptor, we'll use the path with VideoWriter
 
-                if not writer.isOpened():
-                    raise ValueError("Could not initialize video writer. The codec may not be supported.")
+                try:
+                    # Open video writer to temporary file
+                    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+                    writer = cv2.VideoWriter(temp_video, fourcc, metadata.fps, (metadata.width, metadata.height))
 
-                total_frames = metadata.frame_count
-                frames_written = 0
-                for frame_num in range(total_frames):
-                    # Check for cancellation (if we add cancel button)
-                    # Update progress
-                    progress = (frame_num + 1) / total_frames
-                    progress_bar.set(progress)
-                    status_label.configure(text=f"Processing frame {frame_num + 1} / {total_frames}")
+                    if not writer.isOpened():
+                        raise ValueError("Could not initialize video writer. The codec may not be supported.")
+
+                    total_frames = metadata.frame_count
+                    frames_written = 0
+                    for frame_num in range(total_frames):
+                        # Check for cancellation (if we add cancel button)
+                        # Update progress
+                        progress = (frame_num + 1) / total_frames
+                        progress_bar.set(progress)
+                        status_label.configure(text=f"Processing frame {frame_num + 1} / {total_frames}")
+                        progress_window.update()
+
+                        # Get frame
+                        frame = self.frame_cache.get_frame(frame_num)
+                        if frame is None:
+                            # Skip if frame cannot be read, but log warning
+                            logger.warning(f"Skipping frame {frame_num} (could not be read)")
+                            continue
+
+                        # Apply smudges for this frame
+                        if frame_num in self.smudge_operations:
+                            for operation in self.smudge_operations[frame_num]:
+                                try:
+                                    frame = apply_smudge_to_frame(frame, operation)
+                                except Exception as e:
+                                    logger.warning(f"Error applying smudge to frame {frame_num}: {e}")
+                                    # Continue with unmodified frame
+
+                        # Write frame
+                        writer.write(frame)
+                        frames_written += 1
+
+                    writer.release()
+
+                    if frames_written == 0:
+                        raise ValueError("No frames were written to the output video")
+                except Exception:
+                    # Clean up temporary file on error
+                    try:
+                        if os.path.exists(temp_video):
+                            os.remove(temp_video)
+                    except OSError:
+                        pass
+                    raise
+
+                # Verify temporary video exists and has reasonable size
+                if not os.path.exists(temp_video):
+                    raise ValueError("Temporary video file was not created")
+                temp_size = os.path.getsize(temp_video)
+                if temp_size < 1024:  # Less than 1KB is suspicious
+                    raise ValueError(f"Temporary video file is suspiciously small ({temp_size} bytes)")
+
+                # Try to preserve audio using ffmpeg
+                has_audio = False
+                temp_audio = None  # Will be set if audio extraction is attempted
+                try:
+                    # Check if ffmpeg is available
+                    result = subprocess.run(
+                        ["ffmpeg", "-version"],
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        timeout=5,
+                    )
+                    if result.returncode != 0:
+                        raise FileNotFoundError("ffmpeg command failed")
+
+                    # Check if original video has audio stream
+                    status_label.configure(text="Checking for audio track...")
                     progress_window.update()
 
-                    # Get frame
-                    frame = self.frame_cache.get_frame(frame_num)
-                    if frame is None:
-                        # Skip if frame cannot be read, but log warning
-                        logger.warning(f"Skipping frame {frame_num} (could not be read)")
-                        continue
+                    check_audio_cmd = [
+                        "ffprobe",
+                        "-v", "error",
+                        "-select_streams", "a:0",
+                        "-show_entries", "stream=codec_type",
+                        "-of", "csv=p=0",
+                        self.video_processor.video_path,
+                    ]
 
-                    # Apply smudges for this frame
-                    if frame_num in self.smudge_operations:
-                        for operation in self.smudge_operations[frame_num]:
-                            try:
-                                frame = apply_smudge_to_frame(frame, operation)
-                            except Exception as e:
-                                logger.warning(f"Error applying smudge to frame {frame_num}: {e}")
-                                # Continue with unmodified frame
+                    result = subprocess.run(
+                        check_audio_cmd,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        timeout=10,
+                    )
 
-                    # Write frame
-                    writer.write(frame)
-                    frames_written += 1
+                    if result.returncode == 0 and result.stdout.strip():
+                        has_audio = True
+                        logger.info("Audio stream detected in original video")
 
-                writer.release()
+                except (FileNotFoundError, subprocess.TimeoutExpired) as e:
+                    logger.warning(f"Could not check for audio (ffmpeg may not be installed): {e}")
+                    has_audio = False
+                except Exception as e:
+                    logger.warning(f"Error checking for audio: {e}")
+                    has_audio = False
 
-                if frames_written == 0:
-                    raise ValueError("No frames were written to the output video")
+                # If audio exists, combine it with the processed video
+                if has_audio:
+                    try:
+                        status_label.configure(text="Extracting audio and combining...")
+                        progress_window.update()
 
-                # Note: Audio preservation would require ffmpeg, which is complex
-                # For now, we'll just save the video without audio
-                # TODO: Add ffmpeg integration for audio preservation
+                        # Create temporary audio file
+                        temp_audio_fd, temp_audio = tempfile.mkstemp(suffix=".m4a", prefix="deface_audio_")
+                        os.close(temp_audio_fd)
 
-                # Verify output file exists and has reasonable size
+                        # Extract audio from original video
+                        extract_audio_cmd = [
+                            "ffmpeg",
+                            "-i", self.video_processor.video_path,
+                            "-vn",  # No video
+                            "-acodec", "copy",  # Copy audio codec
+                            "-y",  # Overwrite output file
+                            temp_audio,
+                        ]
+
+                        result = subprocess.run(
+                            extract_audio_cmd,
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE,
+                            timeout=60,
+                        )
+
+                        if result.returncode != 0:
+                            logger.warning(f"Failed to extract audio: {result.stderr.decode()}")
+                            has_audio = False
+                        elif not os.path.exists(temp_audio) or os.path.getsize(temp_audio) < 1024:
+                            logger.warning("Extracted audio file is missing or too small")
+                            has_audio = False
+                        else:
+                            # Combine video and audio
+                            status_label.configure(text="Combining video and audio...")
+                            progress_window.update()
+
+                            combine_cmd = [
+                                "ffmpeg",
+                                "-i", temp_video,
+                                "-i", temp_audio,
+                                "-c:v", "copy",  # Copy video codec
+                                "-c:a", "aac",  # Encode audio as AAC for compatibility
+                                "-shortest",  # Finish encoding when the shortest input stream ends
+                                "-y",  # Overwrite output file
+                                filename,
+                            ]
+
+                            result = subprocess.run(
+                                combine_cmd,
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE,
+                                timeout=300,  # 5 minutes max
+                            )
+
+                            if result.returncode == 0 and os.path.exists(filename):
+                                logger.info("Successfully combined video and audio")
+                                # Clean up temporary files
+                                try:
+                                    os.remove(temp_video)
+                                    os.remove(temp_audio)
+                                except OSError as e:
+                                    logger.warning(f"Could not remove temporary files: {e}")
+                            else:
+                                logger.warning(f"Failed to combine video and audio: {result.stderr.decode()}")
+                                # Fall back to video without audio
+                                has_audio = False
+                                if os.path.exists(filename):
+                                    os.remove(filename)
+
+                    except subprocess.TimeoutExpired:
+                        logger.error("Audio processing timed out")
+                        has_audio = False
+                    except Exception as e:
+                        logger.error(f"Error processing audio: {e}", exc_info=True)
+                        has_audio = False
+
+                # If no audio or audio processing failed, copy video without audio to final location
+                if not has_audio:
+                    if os.path.exists(temp_video):
+                        shutil.copy2(temp_video, filename)
+                        logger.info("Saved video without audio track")
+
+                # Clean up temporary files (only if they still exist)
+                # Note: If audio combination succeeded, temp_video and temp_audio were already removed
+                for temp_file in [temp_video, temp_audio]:
+                    if temp_file and os.path.exists(temp_file):
+                        try:
+                            os.remove(temp_file)
+                        except OSError as e:
+                            logger.warning(f"Could not remove temporary file {temp_file}: {e}")
+
+                # Verify final output file exists and has reasonable size
                 if not os.path.exists(filename):
                     raise ValueError("Output file was not created")
                 output_size = os.path.getsize(filename)
@@ -1539,7 +1696,10 @@ class FaceSmudgeWindow(ctk.CTkToplevel):
                     raise ValueError(f"Output file is suspiciously small ({output_size} bytes)")
 
                 progress_window.after(0, lambda: progress_window.destroy())
-                messagebox.showinfo("Success", f"Video saved successfully:\n{filename}\n\nNote: Audio track was not preserved.")
+                if has_audio:
+                    messagebox.showinfo("Success", f"Video saved successfully with audio:\n{filename}")
+                else:
+                    messagebox.showinfo("Success", f"Video saved successfully:\n{filename}\n\nNote: Audio track was not preserved (original video may not have audio, or ffmpeg is not available).")
 
             except ValueError as e:
                 logger.error(f"Error encoding video: {e}")
