@@ -34,13 +34,14 @@ try:
     from tkinterdnd2 import DND_FILES, TkinterDnD
 except ImportError:
     print(
-        "Warning: tkinterdnd2 is not available. Drag and drop will not work.\n"
+        "Error: tkinterdnd2 is not available.\n"
         "\n"
         "Installation instructions:\n"
         "  pip install tkinterdnd2\n"
+        "\n"
+        "For more information, see: https://github.com/pmgagne/tkinterdnd2"
     )
-    DND_FILES = None
-    TkinterDnD = None
+    sys.exit(1)
 
 from config_manager import get_default_config, load_config, save_config
 from dialogs import ConfigDialog, LogDialog
@@ -358,42 +359,26 @@ def validate_paths(input_path: str, output_dir: str) -> Tuple[bool, Optional[str
     return True, None
 
 
-# Create a base class that supports DnD if available
-if TkinterDnD:
-
-    class DefaceAppBase(ctk.CTk, TkinterDnD.Tk):
-        """Base class for DefaceApp with DnD support."""
-
-        pass
-
-else:
-
-    class DefaceAppBase(ctk.CTk):  # type: ignore[no-redef]
-        """Base class for DefaceApp without DnD support."""
-
-        pass
-
-
-class DefaceApp(DefaceAppBase):
+class DefaceApp(ctk.CTk, TkinterDnD.Tk):
     """Main application window for the Deface GUI."""
 
     def __init__(self):
         # Initialize CustomTkinter first (creates the Tk instance)
         ctk.CTk.__init__(self)
 
-        # Then initialize TkinterDnD on the existing Tk instance if available
-        if TkinterDnD:
-            try:
-                # Load tkdnd package into the Tcl interpreter
-                # This makes the tkdnd commands available
-                TkinterDnD._require(self)
-                logger.debug("TkinterDnD initialized successfully")
-            except Exception as e:
-                logger.warning(f"Could not initialize TkinterDnD: {e}")
-                print(f"Warning: Could not initialize TkinterDnD: {e}")
-                import traceback
+        # Initialize TkinterDnD on the existing Tk instance
+        try:
+            # Load tkdnd package into the Tcl interpreter
+            # This makes the tkdnd commands available
+            TkinterDnD._require(self)
+            logger.debug("TkinterDnD initialized successfully")
+        except Exception as e:
+            logger.error(f"Could not initialize TkinterDnD: {e}")
+            print(f"Error: Could not initialize TkinterDnD: {e}")
+            import traceback
 
-                traceback.print_exc()
+            traceback.print_exc()
+            sys.exit(1)
 
         self.title(f"Deface — Batch Processing v{__version__}")
         self.geometry(f"{WINDOW_WIDTH}x{WINDOW_HEIGHT}")
@@ -851,11 +836,6 @@ class DefaceApp(DefaceAppBase):
 
     def _setup_drag_drop(self):
         """Setup drag and drop support for the file list frame."""
-        if not TkinterDnD or not DND_FILES:
-            logger.warning("tkinterdnd2 not available, drag and drop disabled")
-            print("Warning: tkinterdnd2 not available, drag and drop disabled")
-            return
-
         try:
             # After _require() was called in __init__, the widget has dnd methods available
             # Register drop target on root window
