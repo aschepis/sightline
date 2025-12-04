@@ -15,7 +15,7 @@ CONDA_RUN := conda run -n $(CONDA_ENV)
 ### TARGETS ###################################################################
 
 .PHONY: help conda-env conda-remove install install-dev build build-macos sign \
-        notarize create-dmg dist-macos dist clean shell test lint format check
+        notarize create-dmg dist-macos dist clean shell test lint format check run
 
 help:
 	@echo "Conda-based build system for macOS Deface.app"
@@ -69,6 +69,9 @@ install-dev: install
 
 test:
 	$(CONDA_RUN) pytest tests/ -v
+
+run:
+	$(CONDA_RUN) python main.py
 
 ### CODE QUALITY ###############################################################
 
