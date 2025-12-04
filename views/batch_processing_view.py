@@ -8,6 +8,7 @@ import os
 import queue
 import subprocess
 import threading
+import time
 import tkinter as tk
 from pathlib import Path
 from tkinter import filedialog, messagebox
@@ -97,13 +98,28 @@ class BatchProcessingView(BaseView):
         main_frame = ctk.CTkFrame(self)
         main_frame.pack(fill="both", expand=True, padx=20, pady=20)
 
+        # Title section with back button
+        title_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
+        title_frame.pack(fill="x", pady=(0, 20))
+
+        # Back to Home button
+        back_btn = ctk.CTkButton(
+            title_frame,
+            text="← Back to Home",
+            command=self._go_to_home,
+            width=120,
+            height=30,
+            font=ctk.CTkFont(size=12),
+        )
+        back_btn.pack(side="left", padx=(0, 10))
+
         # Title
         title_label = ctk.CTkLabel(
-            main_frame,
+            title_frame,
             text="Deface",
             font=ctk.CTkFont(size=24, weight="bold"),
         )
-        title_label.pack(pady=(0, 20))
+        title_label.pack(side="left")
 
         # Output directory selection
         output_frame = ctk.CTkFrame(main_frame)
@@ -660,6 +676,52 @@ class BatchProcessingView(BaseView):
             self.app.config = dialog.result
             logger.info(f"Configuration updated: {self.app.config}")
             self.app._save_config()
+
+    def _go_to_home(self):
+        """Navigate back to the home view, stopping any running processes if needed."""
+        # Check if there are any running processes
+        has_running_processes = (
+            self.is_processing
+            or any(
+                proc and proc.poll() is None
+                for proc in self.active_processes.values()
+            )
+        )
+
+        if has_running_processes:
+            # Warn user and ask for confirmation
+            response = messagebox.askyesno(
+                "Stop Processing?",
+                "There are processes currently running. "
+                "Returning to the home screen will stop all running processes.\n\n"
+                "Do you want to continue?",
+                icon="warning",
+            )
+
+            if not response:
+                # User cancelled, don't navigate away
+                return
+
+            # User confirmed, stop all processes
+            logger.info("User confirmed stop and return to home")
+            self._stop_processing()
+
+            # Wait a moment for processes to terminate
+            time.sleep(0.5)
+
+            # Terminate any remaining processes
+            for file_path, proc in list(self.active_processes.items()):
+                if proc and proc.poll() is None:
+                    logger.info(f"Terminating remaining process for: {file_path}")
+                    proc.terminate()
+                    try:
+                        proc.wait(timeout=2)
+                    except subprocess.TimeoutExpired:
+                        proc.kill()
+
+        # Navigate to home view
+        if hasattr(self.app, "show_view"):
+            self.app.show_view("home")
 
     def _open_face_smudge(self):
         """Open the Face Smudge window."""

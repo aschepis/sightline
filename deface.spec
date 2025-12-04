@@ -1,4 +1,4 @@
-"""PyInstaller spec for Deface GUI application.
+"""PyInstaller spec for Sightline GUI application.
 
 This spec is responsible for bundling the GUI *and* a small, internal
 `deface` CLI entry point so that end-users do not need to install
@@ -11,11 +11,12 @@ from pathlib import Path
 from PyInstaller.utils.hooks import copy_metadata, collect_data_files
 
 
-app_name = "Deface"
-bundle_id = "com.defaceapp.deface"
+app_name = "Sightline"
+bundle_id = "com.sightlineapp.sightline"
 entry_script = "main.py"
 cli_entry_script = "deface_cli_entry.py"
-icon_file = "icon.png"
+# Use .icns for macOS, .png for other platforms
+icon_file = "icon.icns" if sys.platform == "darwin" else "icon.png"
 
 block_cipher = None
 
@@ -44,12 +45,26 @@ if sys.platform == 'darwin':
     else:
         print(f"✗ Tk library not found at: {tk_lib}")
 
+# Include both icon files for cross-platform support
+icon_files = [("icon.icns", '.'), ("icon.png", '.')] if sys.platform == "darwin" else [("icon.png", '.'), ("icon.ico", '.')]
+
+# Include flaticons directory for button icons
+flaticons_dir = Path("flaticons")
+flaticons_files = []
+if flaticons_dir.exists():
+    # Include the entire flaticons directory structure
+    for png_file in (flaticons_dir / "png").glob("*.png"):
+        flaticons_files.append((str(png_file), "flaticons/png"))
+    # Also include license if present
+    license_file = flaticons_dir / "license" / "license.html"
+    if license_file.exists():
+        flaticons_files.append((str(license_file), "flaticons/license"))
 
 a = Analysis(
     [entry_script, cli_entry_script],
     pathex=[],
     binaries=[],
-    datas=extra_datas + deface_datas + [(icon_file, '.')] + tcl_tk_datas,
+    datas=extra_datas + deface_datas + icon_files + flaticons_files + tcl_tk_datas,
     hiddenimports=[
         "deface",
         "skimage._shared.geometry",
@@ -118,7 +133,7 @@ coll = COLLECT(
 
 # macOS .app bundle build
 # Use the full collected bundle (so libpython and all deps are present),
-# but note that the GUI EXE is the one named "Deface", so it becomes the
+# but note that the GUI EXE is the one named "Sightline", so it becomes the
 # CFBundleExecutable for the .app.
 app = BUNDLE(
     coll,
@@ -135,7 +150,3 @@ app = BUNDLE(
         "NSHighResolutionCapable": True,
     },
 )
-
-# Post-processing: Tcl/Tk libraries are moved from Resources to lib by the Makefile
-# This is done in the build-macos target after PyInstaller completes.
-# See Makefile for the actual post-processing step.

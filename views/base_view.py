@@ -45,6 +45,8 @@ class BaseView(ctk.CTkFrame, ABC):
     def show(self) -> None:
         """Show this view (pack it into the parent)."""
         self.pack(fill="both", expand=True)
+        self.update_idletasks()
+        self.lift()
 
     def hide(self) -> None:
         """Hide this view (remove it from the parent)."""

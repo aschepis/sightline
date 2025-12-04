@@ -53,8 +53,10 @@ from views.base_view import BaseView
 __version__ = "1.0.0"
 
 # Application constants
-WINDOW_WIDTH = 1100
-WINDOW_HEIGHT = 750
+WINDOW_WIDTH = 1080
+WINDOW_HEIGHT = 720
+WINDOW_MIN_WIDTH = 800
+WINDOW_MIN_HEIGHT = 480
 FILE_LIST_HEIGHT = 300
 MAX_FILENAME_DISPLAY_LENGTH = 35
 MAX_BATCH_SIZE = 8
@@ -390,26 +392,45 @@ class DefaceApp(ctk.CTk, TkinterDnD.Tk):
 
         self.title(f"Sightline v{__version__}")
         self.geometry(f"{WINDOW_WIDTH}x{WINDOW_HEIGHT}")
+        self.minsize(WINDOW_MIN_WIDTH, WINDOW_MIN_HEIGHT)
 
         self.icon_image = None
         try:
-            # Try icon.ico first (better for Windows), then fall back to icon.png
-            icon_ico_path = get_resource_path("icon.ico")
-            icon_png_path = get_resource_path("icon.png")
+            # Platform-specific icon loading
+            if sys.platform == "darwin":
+                # macOS: prefer .icns, fall back to .png
+                icon_icns_path = get_resource_path("icon.icns")
+                icon_png_path = get_resource_path("icon.png")
 
-            if Path(icon_ico_path).exists():
-                # Use iconbitmap for .ico files (works on Windows)
-                try:
-                    self.iconbitmap(icon_ico_path)
-                except Exception:
-                    # If iconbitmap fails (e.g., on non-Windows), fall back to PNG
-                    if Path(icon_png_path).exists():
-                        self.icon_image = tk.PhotoImage(file=icon_png_path)
-                        self.iconphoto(False, self.icon_image)
-            elif Path(icon_png_path).exists():
-                # Use iconphoto for PNG files (works cross-platform)
-                self.icon_image = tk.PhotoImage(file=icon_png_path)
-                self.iconphoto(False, self.icon_image)
+                if Path(icon_icns_path).exists():
+                    try:
+                        self.iconbitmap(icon_icns_path)
+                    except Exception:
+                        # Fall back to PNG if ICNS fails
+                        if Path(icon_png_path).exists():
+                            self.icon_image = tk.PhotoImage(file=icon_png_path)
+                            self.iconphoto(False, self.icon_image)
+                elif Path(icon_png_path).exists():
+                    self.icon_image = tk.PhotoImage(file=icon_png_path)
+                    self.iconphoto(False, self.icon_image)
+            else:
+                # Windows/Linux: try .ico first, then .png
+                icon_ico_path = get_resource_path("icon.ico")
+                icon_png_path = get_resource_path("icon.png")
+
+                if Path(icon_ico_path).exists():
+                    # Use iconbitmap for .ico files (works on Windows)
+                    try:
+                        self.iconbitmap(icon_ico_path)
+                    except Exception:
+                        # If iconbitmap fails, fall back to PNG
+                        if Path(icon_png_path).exists():
+                            self.icon_image = tk.PhotoImage(file=icon_png_path)
+                            self.iconphoto(False, self.icon_image)
+                elif Path(icon_png_path).exists():
+                    # Use iconphoto for PNG files (works cross-platform)
+                    self.icon_image = tk.PhotoImage(file=icon_png_path)
+                    self.iconphoto(False, self.icon_image)
         except Exception as e:
             logger.warning(f"Could not load application icon: {e}")
 
@@ -458,6 +479,9 @@ class DefaceApp(ctk.CTk, TkinterDnD.Tk):
         # Show new view
         self.current_view = self.views[view_name]
         self.current_view.show()
+        
+        # Ensure the view is properly updated and displayed
+        self.update_idletasks()
 
     def get_desktop_path(self) -> str:
         """Get the user's Desktop folder path.
