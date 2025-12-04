@@ -48,12 +48,12 @@ SUPPORTED_EXTENSIONS = {
     ".mkv",
 }
 
-# Status colors for file processing
+# Status colors for file processing - Sightline brand colors
 STATUS_COLORS = {
-    "pending": ("gray", "Pending"),
-    "processing": ("blue", "Processing"),
-    "success": ("green", "Success"),
-    "failed": ("red", "Failed"),
+    "pending": ("#8ea4c7", "Pending"),  # Mist Blue
+    "processing": ("#00a6ff", "Processing"),  # Primary Accent
+    "success": ("#4caf50", "Success"),  # Standard success green
+    "failed": ("#ff3b30", "Failed"),  # Ember Red
 }
 
 # Keywords for error detection in logs
@@ -193,7 +193,7 @@ class BatchProcessingView(BaseView):
             self.files_list_frame,
             text="No files added. Click 'Add Files' to select files.",
             font=ctk.CTkFont(size=12),
-            text_color="gray",
+            text_color="#8ea4c7",  # Mist Blue
         )
         self.no_files_label.pack(pady=50)
 
@@ -217,7 +217,7 @@ class BatchProcessingView(BaseView):
             command=self._stop_processing,
             width=120,
             height=40,
-            fg_color="red",
+            fg_color="#ff3b30",  # Ember Red
         )
         self.stop_btn.pack(side="left", padx=10)
         self.stop_btn.configure(state="disabled")
@@ -281,7 +281,7 @@ class BatchProcessingView(BaseView):
             text="Pending",
             font=ctk.CTkFont(size=10),
             width=70,
-            text_color="gray",
+            text_color="#8ea4c7",  # Mist Blue
         )
         status_label.pack(side="left", padx=5)
 
@@ -296,7 +296,7 @@ class BatchProcessingView(BaseView):
             text="--:--",
             font=ctk.CTkFont(size=10),
             width=50,
-            text_color="gray",
+            text_color="#8ea4c7",  # Mist Blue
         )
         eta_label.pack(side="left", padx=3)
 
@@ -306,13 +306,13 @@ class BatchProcessingView(BaseView):
             text="00:00",
             font=ctk.CTkFont(size=10),
             width=50,
-            text_color="gray",
+            text_color="#8ea4c7",  # Mist Blue
         )
         elapsed_label.pack(side="left", padx=3)
 
         # Speed label
         speed_label = ctk.CTkLabel(
-            row_frame, text="--", font=ctk.CTkFont(size=10), width=60, text_color="gray"
+            row_frame, text="--", font=ctk.CTkFont(size=10), width=60, text_color="#8ea4c7"  # Mist Blue
         )
         speed_label.pack(side="left", padx=3)
 
@@ -323,7 +323,7 @@ class BatchProcessingView(BaseView):
             command=lambda: self._show_file_logs(file_path),
             width=60,
             height=25,
-            fg_color="orange",
+            fg_color="#00a6ff",  # Primary Accent
         )
         # Don't pack it yet, will show on failure
 

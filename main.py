@@ -126,11 +126,37 @@ def parse_args():
     return parser.parse_args()
 
 
+def get_resource_path(relative_path: str) -> str:
+    """Get the absolute path to a resource file.
+
+    Works both in development and when bundled with PyInstaller.
+
+    Args:
+        relative_path: Relative path to the resource file.
+
+    Returns:
+        Absolute path to the resource file.
+    """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS  # type: ignore[attr-defined]
+    except AttributeError:
+        # Running in development mode
+        base_path = Path(__file__).parent.absolute()
+
+    return str(Path(base_path) / relative_path)
+
+
 # Set customtkinter appearance mode and color theme
-# "System" mode automatically adapts to the OS theme (light/dark on macOS, Windows, etc.)
-# This ensures native appearance on all platforms without platform-specific code
-ctk.set_appearance_mode("System")
-ctk.set_default_color_theme("blue")
+# Use Dark mode to match Sightline brand guidelines
+ctk.set_appearance_mode("Dark")
+# Load custom Sightline theme
+theme_path = get_resource_path("sightline_theme.json")
+if Path(theme_path).exists():
+    ctk.set_default_color_theme(theme_path)
+else:
+    logger.warning(f"Sightline theme file not found at {theme_path}, using default theme")
+    ctk.set_default_color_theme("blue")
 
 
 def build_deface_args(config: Dict[str, Any]) -> List[str]:
@@ -291,27 +317,6 @@ def run_deface(
     except OSError as e:
         logger.error(f"Failed to start deface process: {e}")
         raise
-
-
-def get_resource_path(relative_path: str) -> str:
-    """Get the absolute path to a resource file.
-
-    Works both in development and when bundled with PyInstaller.
-
-    Args:
-        relative_path: Relative path to the resource file.
-
-    Returns:
-        Absolute path to the resource file.
-    """
-    try:
-        # PyInstaller creates a temp folder and stores path in _MEIPASS
-        base_path = sys._MEIPASS  # type: ignore[attr-defined]
-    except AttributeError:
-        # Running in development mode
-        base_path = Path(__file__).parent.absolute()
-
-    return str(Path(base_path) / relative_path)
 
 
 def get_desktop_path() -> str:

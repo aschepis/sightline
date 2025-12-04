@@ -48,6 +48,10 @@ if sys.platform == 'darwin':
 # Include both icon files for cross-platform support
 icon_files = [("icon.icns", '.'), ("icon.png", '.')] if sys.platform == "darwin" else [("icon.png", '.'), ("icon.ico", '.')]
 
+# Include theme file
+theme_file = Path("sightline_theme.json")
+theme_files = [(str(theme_file), '.')] if theme_file.exists() else []
+
 # Include flaticons directory for button icons
 flaticons_dir = Path("flaticons")
 flaticons_files = []
@@ -64,7 +68,7 @@ a = Analysis(
     [entry_script, cli_entry_script],
     pathex=[],
     binaries=[],
-    datas=extra_datas + deface_datas + icon_files + flaticons_files + tcl_tk_datas,
+    datas=extra_datas + deface_datas + icon_files + theme_files + flaticons_files + tcl_tk_datas,
     hiddenimports=[
         "deface",
         "skimage._shared.geometry",

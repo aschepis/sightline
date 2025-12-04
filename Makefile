@@ -2,7 +2,7 @@
 
 CONDA_ENV := deface-build
 CONDA_PY := 3.12
-APP := Deface
+APP := Sightline
 SPEC := deface.spec
 DIST_APP := dist/$(APP).app
 SIGNING_IDENTITY ?= -

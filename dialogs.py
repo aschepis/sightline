@@ -216,7 +216,7 @@ class ConfigDialog(ctk.CTkToplevel):
             frame,
             text="Tune this to trade off between false positive and false negative rate",
             font=ctk.CTkFont(size=10),
-            text_color="gray",
+            text_color="#8ea4c7",  # Mist Blue
         ).pack(anchor="w", padx=10, pady=(0, 5))
 
         self.thresh_entry = ctk.CTkEntry(frame, width=150)
@@ -236,7 +236,7 @@ class ConfigDialog(ctk.CTkToplevel):
             frame,
             text="Downscale images for network inference (e.g., 640x360). Leave empty for no scaling.",
             font=ctk.CTkFont(size=10),
-            text_color="gray",
+            text_color="#8ea4c7",  # Mist Blue
         ).pack(anchor="w", padx=10, pady=(0, 5))
 
         self.scale_entry = ctk.CTkEntry(
@@ -259,7 +259,7 @@ class ConfigDialog(ctk.CTkToplevel):
             frame,
             text="Use boxes instead of ellipse masks",
             font=ctk.CTkFont(size=10),
-            text_color="gray",
+            text_color="#8ea4c7",  # Mist Blue
         ).pack(anchor="w", padx=10, pady=(0, 5))
 
         self.boxes_var = tk.BooleanVar(value=self.config.get("boxes", False))
@@ -281,7 +281,7 @@ class ConfigDialog(ctk.CTkToplevel):
             frame,
             text="Scale factor for face masks to ensure complete face coverage",
             font=ctk.CTkFont(size=10),
-            text_color="gray",
+            text_color="#8ea4c7",  # Mist Blue
         ).pack(anchor="w", padx=10, pady=(0, 5))
 
         self.mask_scale_entry = ctk.CTkEntry(frame, width=150)
@@ -301,7 +301,7 @@ class ConfigDialog(ctk.CTkToplevel):
             frame,
             text="Filter mode for face regions",
             font=ctk.CTkFont(size=10),
-            text_color="gray",
+            text_color="#8ea4c7",  # Mist Blue
         ).pack(anchor="w", padx=10, pady=(0, 5))
 
         replace_options = ["blur", "solid", "none", "img", "mosaic"]
@@ -324,7 +324,7 @@ class ConfigDialog(ctk.CTkToplevel):
             frame,
             text="Keep audio from video source file (only applies to videos)",
             font=ctk.CTkFont(size=10),
-            text_color="gray",
+            text_color="#8ea4c7",  # Mist Blue
         ).pack(anchor="w", padx=10, pady=(0, 5))
 
         self.audio_var = tk.BooleanVar(value=self.config.get("keep_audio", True))
@@ -346,7 +346,7 @@ class ConfigDialog(ctk.CTkToplevel):
             frame,
             text="Keep metadata of the original image",
             font=ctk.CTkFont(size=10),
-            text_color="gray",
+            text_color="#8ea4c7",  # Mist Blue
         ).pack(anchor="w", padx=10, pady=(0, 5))
 
         self.metadata_var = tk.BooleanVar(value=self.config.get("keep_metadata", True))
@@ -368,7 +368,7 @@ class ConfigDialog(ctk.CTkToplevel):
             frame,
             text=f"Number of files to process concurrently (1-{self.MAX_BATCH_SIZE})",
             font=ctk.CTkFont(size=10),
-            text_color="gray",
+            text_color="#8ea4c7",  # Mist Blue
         ).pack(anchor="w", padx=10, pady=(0, 5))
 
         self.batch_size_entry = ctk.CTkEntry(frame, width=150)
@@ -388,7 +388,7 @@ class ConfigDialog(ctk.CTkToplevel):
             text="Cancel",
             command=self._on_cancel,
             width=100,
-            fg_color="gray",
+            fg_color="#1a253a",  # Border subtle
         )
         cancel_btn.pack(side="right", padx=10)
 
@@ -587,7 +587,7 @@ class InfoDialog(ctk.CTkToplevel):
             main_frame,
             text=f"Version {__version__}",
             font=ctk.CTkFont(size=14),
-            text_color="gray",
+            text_color="#8ea4c7",  # Mist Blue
         )
         version_label.pack(pady=(0, 20))
 

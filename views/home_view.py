@@ -63,13 +63,13 @@ class HomeView(BaseView):
         )
         title_label.pack()
 
-        # Double underline effect (using two separator lines)
+        # Double underline effect (using two separator lines) - Sightline brand accent color
         underline1 = ctk.CTkFrame(
-            title_frame, height=2, fg_color=("gray70", "gray30")
+            title_frame, height=2, fg_color="#00a6ff"
         )
         underline1.pack(fill="x", padx=50, pady=(5, 0))
         underline2 = ctk.CTkFrame(
-            title_frame, height=2, fg_color=("gray70", "gray30")
+            title_frame, height=2, fg_color="#00a6ff"
         )
         underline2.pack(fill="x", padx=50, pady=(2, 0))
 
@@ -179,8 +179,9 @@ class HomeView(BaseView):
             height=40,
             command=self._on_settings_clicked,
             fg_color="transparent",
-            text_color=("gray20", "gray80"),  # Dark in light mode, light in dark mode
-            hover=False,
+            text_color="#8ea4c7",  # Mist Blue for secondary text
+            hover_color="#00a6ff",  # Accent color on hover
+            hover=True,
         )
         settings_button.place(relx=1.0, rely=0.0, anchor="ne", x=-20, y=20)
 
@@ -193,8 +194,9 @@ class HomeView(BaseView):
             height=40,
             command=self._on_info_clicked,
             fg_color="transparent",
-            text_color=("gray20", "gray80"),  # Dark in light mode, light in dark mode
-            hover=False,
+            text_color="#8ea4c7",  # Mist Blue for secondary text
+            hover_color="#00a6ff",  # Accent color on hover
+            hover=True,
         )
         info_button.place(relx=1.0, rely=1.0, anchor="se", x=-20, y=-20)
 
@@ -229,8 +231,8 @@ class HomeView(BaseView):
                 if hasattr(self.app, "_save_config"):
                     self.app._save_config()
         except Exception as e:
-            logger.error(f"Error opening settings dialog: {e}")
-            messagebox.showerror("Error", f"Could not open settings:\n{str(e)}")
+            logger.error(f"Error opening settings dialog: {e}", exc_info=True)
+            messagebox.showerror("Error", f"Could not open settings:\n{str(e)}\n\nType: {type(e).__name__}")
 
     def _on_info_clicked(self):
         """Handle Info button click - open info and attribution dialog."""
@@ -239,5 +241,5 @@ class HomeView(BaseView):
             dialog = InfoDialog(self.app)
             self.app.wait_window(dialog)
         except Exception as e:
-            logger.error(f"Error opening info dialog: {e}")
-            messagebox.showerror("Error", f"Could not open info:\n{str(e)}")
+            logger.error(f"Error opening info dialog: {e}", exc_info=True)
+            messagebox.showerror("Error", f"Could not open info:\n{str(e)}\n\nType: {type(e).__name__}")

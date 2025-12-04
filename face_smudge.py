@@ -652,12 +652,12 @@ class FaceSmudgeWindow(ctk.CTkToplevel):
         ).pack(side="left", padx=10, pady=10)
 
         self.file_label = ctk.CTkLabel(
-            header_frame, text="No video loaded", font=ctk.CTkFont(size=12), text_color="gray"
+            header_frame, text="No video loaded", font=ctk.CTkFont(size=12), text_color="#8ea4c7"  # Mist Blue
         )
         self.file_label.pack(side="left", padx=10, pady=10)
 
         self.duration_label = ctk.CTkLabel(
-            header_frame, text="", font=ctk.CTkFont(size=12), text_color="gray"
+            header_frame, text="", font=ctk.CTkFont(size=12), text_color="#8ea4c7"  # Mist Blue
         )
         self.duration_label.pack(side="right", padx=10, pady=10)
 
@@ -669,7 +669,7 @@ class FaceSmudgeWindow(ctk.CTkToplevel):
             video_frame,
             text="Click 'Load Video' to select a video file",
             font=ctk.CTkFont(size=14),
-            fg_color=("gray75", "gray25"),
+            fg_color="#030922",  # Dark panel background
         )
         self.video_label.pack(fill="both", expand=True, padx=10, pady=10)
 
@@ -750,7 +750,7 @@ class FaceSmudgeWindow(ctk.CTkToplevel):
         self.scrubber.pack(fill="x", padx=10, pady=10)
 
         self.time_label = ctk.CTkLabel(
-            timeline_frame, text="00:00 / 00:00", font=ctk.CTkFont(size=11), text_color="gray"
+            timeline_frame, text="00:00 / 00:00", font=ctk.CTkFont(size=11), text_color="#8ea4c7"  # Mist Blue
         )
         self.time_label.pack(pady=(0, 10))
 
@@ -767,7 +767,7 @@ class FaceSmudgeWindow(ctk.CTkToplevel):
         self.progress_bar.set(0)
 
         self.operations_label = ctk.CTkLabel(
-            status_frame, text="Operations: 0 smudges", font=ctk.CTkFont(size=11), text_color="gray"
+            status_frame, text="Operations: 0 smudges", font=ctk.CTkFont(size=11), text_color="#8ea4c7"  # Mist Blue
         )
         self.operations_label.pack(side="left", padx=10, pady=10)
 
@@ -776,7 +776,7 @@ class FaceSmudgeWindow(ctk.CTkToplevel):
             status_frame,
             text="Status: Ready | Mouse: -- | Dragging: No",
             font=ctk.CTkFont(size=10),
-            text_color="gray",
+            text_color="#8ea4c7",  # Mist Blue
         )
         self.status_indicator.pack(side="right", padx=10, pady=10)
 
@@ -800,7 +800,7 @@ class FaceSmudgeWindow(ctk.CTkToplevel):
         save_btn.pack(side="right", padx=10, pady=10)
 
         cancel_btn = ctk.CTkButton(
-            button_frame, text="Cancel", command=self._on_cancel, width=100, height=30, fg_color="gray"
+            button_frame, text="Cancel", command=self._on_cancel, width=100, height=30, fg_color="#1a253a"  # Border subtle
         )
         cancel_btn.pack(side="right", padx=10, pady=10)
 
@@ -1374,7 +1374,7 @@ class FaceSmudgeWindow(ctk.CTkToplevel):
         radius_slider = ctk.CTkSlider(radius_frame, from_=10, to=200, variable=radius_var, command=lambda v: self._update_radius_label(radius_label, v))
         radius_slider.pack(fill="x", padx=10, pady=(0, 5))
 
-        radius_label = ctk.CTkLabel(radius_frame, text=str(self.blur_radius), font=ctk.CTkFont(size=11), text_color="gray")
+        radius_label = ctk.CTkLabel(radius_frame, text=str(self.blur_radius), font=ctk.CTkFont(size=11), text_color="#8ea4c7")  # Mist Blue
         radius_label.pack(anchor="w", padx=10, pady=(0, 10))
 
         # Blur sigma
@@ -1389,7 +1389,7 @@ class FaceSmudgeWindow(ctk.CTkToplevel):
         sigma_slider = ctk.CTkSlider(sigma_frame, from_=5, to=100, variable=sigma_var, command=lambda v: self._update_sigma_label(sigma_label, v))
         sigma_slider.pack(fill="x", padx=10, pady=(0, 5))
 
-        sigma_label = ctk.CTkLabel(sigma_frame, text=str(int(self.blur_sigma)), font=ctk.CTkFont(size=11), text_color="gray")
+        sigma_label = ctk.CTkLabel(sigma_frame, text=str(int(self.blur_sigma)), font=ctk.CTkFont(size=11), text_color="#8ea4c7")  # Mist Blue
         sigma_label.pack(anchor="w", padx=10, pady=(0, 10))
 
         # Buttons
@@ -1406,7 +1406,7 @@ class FaceSmudgeWindow(ctk.CTkToplevel):
         ok_btn = ctk.CTkButton(button_frame, text="OK", command=on_ok, width=100)
         ok_btn.pack(side="right", padx=10)
 
-        cancel_btn = ctk.CTkButton(button_frame, text="Cancel", command=settings_window.destroy, width=100, fg_color="gray")
+        cancel_btn = ctk.CTkButton(button_frame, text="Cancel", command=settings_window.destroy, width=100, fg_color="#1a253a")  # Border subtle
         cancel_btn.pack(side="right", padx=10)
 
         settings_window.focus()
@@ -1471,7 +1471,7 @@ class FaceSmudgeWindow(ctk.CTkToplevel):
         progress_bar.pack(pady=10)
         progress_bar.set(0)
 
-        status_label = ctk.CTkLabel(progress_frame, text="Starting...", font=ctk.CTkFont(size=11), text_color="gray")
+        status_label = ctk.CTkLabel(progress_frame, text="Starting...", font=ctk.CTkFont(size=11), text_color="#8ea4c7")  # Mist Blue
         status_label.pack(pady=5)
 
         progress_window.update()
