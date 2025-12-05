@@ -215,6 +215,18 @@ class GenericBatchView(BaseView, ABC):
         button_frame = ctk.CTkFrame(self, fg_color="transparent")
         button_frame.grid(row=2, column=0, sticky="e", padx=20, pady=20)
 
+        select_files_btn = ctk.CTkButton(
+            button_frame,
+            text="Select Files",
+            command=self._select_files,
+            width=120,
+            height=40,
+            fg_color="transparent",
+            border_width=2,
+            text_color=("black", "white")
+        )
+        select_files_btn.pack(side="left", padx=(0, 10))
+
         self.start_stop_btn = ctk.CTkButton(
             button_frame,
             text="Start",
@@ -225,7 +237,7 @@ class GenericBatchView(BaseView, ABC):
             border_width=2,
             text_color=("black", "white")
         )
-        self.start_stop_btn.pack()
+        self.start_stop_btn.pack(side="left")
 
     def _create_custom_widgets(self, parent: ctk.CTkFrame) -> None:
         """Create custom widgets in the left panel below output folder selection.
@@ -690,6 +702,69 @@ class GenericBatchView(BaseView, ABC):
             self.output_entry.delete(0, tk.END)
             self.output_entry.insert(0, folder)
             self.app._save_config()
+
+    def _select_files(self, event: Optional[Any] = None):
+        """Open file dialog to select files for processing with multiselect.
+
+        Args:
+            event: Optional event parameter for compatibility with bindings.
+        """
+        # Build file type filter from supported extensions
+        # Format: [("Description", "*.ext1 *.ext2"), ("All files", "*.*")]
+        file_types = []
+        
+        # Group extensions by category for better UX
+        image_exts = []
+        video_exts = []
+        audio_exts = []
+        other_exts = []
+        
+        for ext in self.supported_extensions:
+            ext_lower = ext.lower()
+            if ext_lower in ('.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.gif', '.webp'):
+                image_exts.append(ext_lower)
+            elif ext_lower in ('.mp4', '.avi', '.mov', '.mkv', '.webm', '.m4v', '.m4p'):
+                video_exts.append(ext_lower)
+            elif ext_lower in ('.mp3', '.wav', '.flac', '.aac', '.ogg', '.m4a'):
+                audio_exts.append(ext_lower)
+            else:
+                other_exts.append(ext_lower)
+        
+        # Build file type list
+        if image_exts:
+            pattern = " ".join(f"*{ext}" for ext in sorted(set(image_exts)))
+            file_types.append(("Image files", pattern))
+        
+        if video_exts:
+            pattern = " ".join(f"*{ext}" for ext in sorted(set(video_exts)))
+            file_types.append(("Video files", pattern))
+        
+        if audio_exts:
+            pattern = " ".join(f"*{ext}" for ext in sorted(set(audio_exts)))
+            file_types.append(("Audio files", pattern))
+        
+        if other_exts:
+            pattern = " ".join(f"*{ext}" for ext in sorted(set(other_exts)))
+            file_types.append(("Other files", pattern))
+        
+        # Add combined pattern for all supported files
+        all_pattern = " ".join(f"*{ext}" for ext in sorted(self.supported_extensions))
+        file_types.insert(0, ("All supported files", all_pattern))
+        
+        # Always add "All files" as last option
+        file_types.append(("All files", "*.*"))
+        
+        # Ensure we have focus before opening dialog
+        self.app.focus()
+        filenames = filedialog.askopenfilenames(
+            parent=self.app,
+            title="Select files to process",
+            filetypes=file_types
+        )
+        
+        if filenames:
+            logger.info(f"User selected {len(filenames)} file(s) via file dialog")
+            self._add_files_to_queue(filenames)
 
     def _go_to_home(self):
         """Navigate back to the home view, stopping any running processes if needed."""
