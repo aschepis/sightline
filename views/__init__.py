@@ -1,4 +1,4 @@
-"""Views package for Deface application.
+"""Views package for Sightline application.
 
 This package contains all UI page/view classes for the application.
 """

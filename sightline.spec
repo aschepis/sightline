@@ -7,6 +7,7 @@ This spec is responsible for bundling the GUI *and* a small, internal
 
 import sys
 import os
+import importlib.util
 from pathlib import Path
 from PyInstaller.utils.hooks import copy_metadata, collect_data_files
 
@@ -25,6 +26,31 @@ block_cipher = None
 # - deface: ships ONNX models (e.g. centerface.onnx) as package data.
 extra_datas = copy_metadata("imageio")
 deface_datas = collect_data_files("deface")
+
+# Collect data for lightning and lightning_fabric to resolve missing version.info issues
+# These are dependencies of whisperx/pyannote.audio
+lightning_datas = collect_data_files("lightning")
+lightning_metadata = copy_metadata("lightning")
+
+lightning_fabric_datas = collect_data_files("lightning_fabric")
+lightning_fabric_metadata = copy_metadata("lightning_fabric")
+
+# Explicitly check for version.info which is often missed
+# spec = importlib.util.find_spec("lightning_fabric")
+# if spec and spec.origin:
+#     pkg_path = Path(spec.origin).parent
+#     version_file = pkg_path / "version.info"
+#     if version_file.exists():
+#         found = False
+#         for src, dest in lightning_fabric_datas:
+#             if os.path.abspath(src) == os.path.abspath(str(version_file)):
+#                 found = True
+#                 break
+
+#         if not found:
+#             print(f"Explicitly adding lightning_fabric/version.info: {version_file}")
+#             # Target _internal/lightning_fabric since PyInstaller 6 puts packages there
+#             lightning_fabric_datas.append((str(version_file), "_internal/lightning_fabric"))
 
 # Collect Tcl/Tk library files for tkinter
 tcl_tk_datas = []
@@ -68,7 +94,7 @@ a = Analysis(
     [entry_script, cli_entry_script],
     pathex=[],
     binaries=[],
-    datas=extra_datas + deface_datas + icon_files + theme_files + flaticons_files + tcl_tk_datas,
+    datas=extra_datas + deface_datas + lightning_datas + lightning_metadata + lightning_fabric_datas + lightning_fabric_metadata + icon_files + theme_files + flaticons_files + tcl_tk_datas,
     hiddenimports=[
         "deface",
         "skimage._shared.geometry",
@@ -77,6 +103,15 @@ a = Analysis(
         "progress_parser",
         "tkinter",
         "_tkinter",
+        "lightning",
+        "lightning_fabric",
+        "whisperx",
+        "whisperx.asr",
+        "whisperx.diarize",
+        "whisperx.utils",
+        "whisperx.align",
+        "whisperx.load",
+        "pyannote.audio",
     ],
     hookspath=[],
     hooksconfig={},
@@ -105,8 +140,8 @@ gui_exe = EXE(
 
 # Standalone CLI executable that runs the deface library from the bundled
 # Python runtime. This will typically live next to the GUI binary, e.g.:
-#   macOS: Deface.app/Contents/MacOS/deface-cli
-#   Win/Linux: dist/Deface/deface-cli(.exe)
+#   macOS: Sightline.app/Contents/MacOS/deface-cli
+#   Win/Linux: dist/Sightline/deface-cli(.exe)
 cli_exe = EXE(
     pyz,
     [("deface_cli_entry", cli_entry_script, "PYSOURCE")],

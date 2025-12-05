@@ -1,8 +1,8 @@
-"""Dialog windows for the Deface application.
+"""Dialog windows for the Sightline application.
 
-This module contains custom dialog classes used in the Deface GUI:
+This module contains custom dialog classes used in the Sightline GUI:
 - LogDialog: Display error logs for individual files
-- ConfigDialog: Configure deface processing options
+- ConfigDialog: Configure Sightline processing options
 """
 
 import importlib
@@ -112,14 +112,14 @@ class LogDialog(ctk.CTkToplevel):
 
 
 class ConfigDialog(ctk.CTkToplevel):
-    """Configuration dialog for deface options."""
+    """Configuration dialog for Sightline options."""
 
     MAX_BATCH_SIZE = 8
 
     def __init__(self, parent, config: Dict[str, Any]):
         super().__init__(parent)
 
-        self.title("Deface Configuration")
+        self.title("Sightline Configuration")
         self.geometry("600x650")
         self.resizable(False, False)
 

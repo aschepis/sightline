@@ -1,6 +1,6 @@
-"""Dialog windows for the Deface application.
+"""Dialog windows for the Sightline application.
 
-This package contains custom dialog classes used in the Deface GUI.
+This package contains custom dialog classes used in the Sightline GUI.
 """
 
 from views.dialogs.config_dialog import ConfigDialog

@@ -1,6 +1,6 @@
 # Sightline
 
-[![CI](https://github.com/aschepis/deface-app/workflows/CI/badge.svg)](https://github.com/aschepis/deface-app/actions)
+[![CI](https://github.com/aschepis/sightline/workflows/CI/badge.svg)](https://github.com/aschepis/sightline/actions)
 [![Python Version](https://img.shields.io/badge/python-3.8%2B-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
@@ -27,11 +27,11 @@ A comprehensive privacy and redaction suite for the desktop. Sightline combines 
 
 ````bash
 # Clone the repository
-git clone https://github.com/aschepis/deface-app.git
-cd deface-app
+git clone https://github.com/aschepis/sightline.git
+cd sightline
 
 # Create a Conda environment
-conda create -n deface-build python=3.12
+conda create -n sightline-build python=3.12
 
 # Install dependencies
 make install

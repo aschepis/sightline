@@ -24,7 +24,7 @@ jobs:
           auto-update-conda: true
           python-version: ${{ matrix.python-version }}
           miniforge-version: latest
-          activate-environment: deface-build
+          activate-environment: sightline-build
 
       - name: Install dependencies
         shell: bash -el {0}
@@ -40,7 +40,7 @@ jobs:
       - name: Run tests with coverage
         shell: bash -el {0}
         run: |
-          conda run -n deface-build pytest tests/ -v --cov=main --cov-report=xml --cov-report=term-missing
+          conda run -n sightline-build pytest tests/ -v --cov=main --cov-report=xml --cov-report=term-missing
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
@@ -66,7 +66,7 @@ jobs:
           auto-update-conda: true
           python-version: ${{ matrix.python-version }}
           miniforge-version: latest
-          activate-environment: deface-build
+          activate-environment: sightline-build
 
       - name: Install dependencies
         shell: bash -el {0}
@@ -76,5 +76,5 @@ jobs:
       - name: Check PyInstaller build
         shell: bash -el {0}
         run: |
-          conda run -n deface-build python -m PyInstaller deface.spec --clean --noconfirm
+          conda run -n sightline-build python -m PyInstaller sightline.spec --clean --noconfirm
         continue-on-error: true

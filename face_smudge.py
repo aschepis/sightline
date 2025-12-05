@@ -544,7 +544,7 @@ class FaceSmudgeWindow(ctk.CTkToplevel):
         """Initialize face smudge window.
 
         Args:
-            parent: Parent window (DefaceApp instance).
+            parent: Parent window (SightlineApp instance).
         """
         super().__init__(parent)
 
@@ -1504,7 +1504,7 @@ class FaceSmudgeWindow(ctk.CTkToplevel):
                     raise ValueError(f"Cannot write to output location: {str(e)}")
 
                 # Create temporary video file first
-                temp_video_fd, temp_video = tempfile.mkstemp(suffix=".mp4", prefix="deface_smudge_")
+                temp_video_fd, temp_video = tempfile.mkstemp(suffix=".mp4", prefix="sightline_smudge_")
                 os.close(temp_video_fd)  # Close file descriptor, we'll use the path with VideoWriter
 
                 try:
@@ -1617,7 +1617,7 @@ class FaceSmudgeWindow(ctk.CTkToplevel):
                         progress_window.update()
 
                         # Create temporary audio file
-                        temp_audio_fd, temp_audio = tempfile.mkstemp(suffix=".m4a", prefix="deface_audio_")
+                        temp_audio_fd, temp_audio = tempfile.mkstemp(suffix=".m4a", prefix="sightline_audio_")
                         os.close(temp_audio_fd)
 
                         # Extract audio from original video

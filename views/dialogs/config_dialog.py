@@ -1,4 +1,4 @@
-"""Configuration dialog for deface options."""
+"""Configuration dialog for Sightline options."""
 
 import importlib
 import logging
@@ -30,14 +30,14 @@ def _get_version() -> str:
 
 
 class ConfigDialog(ctk.CTkToplevel):
-    """Configuration dialog for deface options."""
+    """Configuration dialog for Sightline options."""
 
     MAX_BATCH_SIZE = 8
 
     def __init__(self, parent, config: Dict[str, Any], full_config: Optional[Dict[str, Any]] = None):
         super().__init__(parent)
 
-        self.title("Deface Configuration")
+        self.title("Sightline Configuration")
         self.geometry("600x700")
         self.resizable(False, False)
 
@@ -467,7 +467,8 @@ class ConfigDialog(ctk.CTkToplevel):
                 return
             config["batch_size"] = batch_size
 
-            # Store Hugging Face token separately (it's not part of deface_config)
+            # Store Hugging Face token separately (it's not part of sightline_config)
+            # TODO: it IS part of sightline_config. Figure out whats happening here and fix/remove this.
             self.hugging_face_token = self.hf_token_entry.get().strip()
 
             self.result = config

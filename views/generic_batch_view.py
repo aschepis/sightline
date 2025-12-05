@@ -1,4 +1,4 @@
-"""Generic batch processing view for the Deface application.
+"""Generic batch processing view for the Sightline application.
 
 This module provides a reusable base class for batch processing files with
 configurable processing logic, file types, and UI elements.

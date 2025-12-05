@@ -14,38 +14,38 @@
 #define MyAppVersionInfoVersion MyAppVersion + ".0"
 
 [Setup]
-AppName=Deface
+AppName=Sightline
 AppVersion={#MyAppVersion}
-AppPublisher=Deface App Contributors
-AppPublisherURL=https://github.com/aschepis/deface-app
-AppSupportURL=https://github.com/aschepis/deface-app/issues
-AppUpdatesURL=https://github.com/aschepis/deface-app/releases
-DefaultDirName={autopf}\Deface
-DefaultGroupName=Deface
+AppPublisher=Sightline App Contributors
+AppPublisherURL=https://github.com/aschepis/sightline
+AppSupportURL=https://github.com/aschepis/sightline/issues
+AppUpdatesURL=https://github.com/aschepis/sightline/releases
+DefaultDirName={autopf}\Sightline
+DefaultGroupName=Sightline
 OutputDir=Output
-OutputBaseFilename=DefaceInstaller
+OutputBaseFilename=SightlineInstaller
 Compression=lzma
 SolidCompression=yes
 LicenseFile=LICENSE
 InfoBeforeFile=
 InfoAfterFile=
 VersionInfoVersion={#MyAppVersionInfoVersion}
-VersionInfoCompany=Deface App Contributors
-VersionInfoDescription=GUI application for blurring faces in images and videos
+VersionInfoCompany=Sightline App Contributors
+VersionInfoDescription=Powerful tools for face blurring, manual redaction, and audio transcription in a single application.
 VersionInfoCopyright=Copyright (C) 2025
-VersionInfoProductName=Deface
+VersionInfoProductName=Sightline
 VersionInfoProductVersion={#MyAppVersion}
 
 [Files]
-Source: "dist\Deface\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "dist\Sightline\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
-Name: "{group}\Deface"; Filename: "{app}\Deface.exe"
-Name: "{group}\Uninstall Deface"; Filename: "{uninstallexe}"
-Name: "{userdesktop}\Deface"; Filename: "{app}\Deface.exe"; Tasks: desktopicon
+Name: "{group}\Sightline"; Filename: "{app}\Sightline.exe"
+Name: "{group}\Uninstall Sightline"; Filename: "{uninstallexe}"
+Name: "{userdesktop}\Sightline"; Filename: "{app}\Sightline.exe"; Tasks: desktopicon
 
 [Tasks]
 Name: "desktopicon"; Description: "Create a &desktop icon"; GroupDescription: "Additional icons:"; Flags: unchecked
 
 [Run]
-Filename: "{app}\Deface.exe"; Description: "Launch Deface"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\Sightline.exe"; Description: "Launch Sightline"; Flags: nowait postinstall skipifsilent

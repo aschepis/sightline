@@ -1,7 +1,8 @@
-"""GUI application for blurring faces in images and videos using deface.
+"""GUI application that provide privacy-first media tools.
 
-This module provides a simple graphical interface for the deface library,
-allowing users to select input files and output directories for face blurring.
+This module provides a simple graphical interface for the Sightline application,
+allowing users to select input files and output directories for face blurring,
+manual redaction, and audio transcription.
 """
 
 import argparse
@@ -99,7 +100,7 @@ def parse_args():
         argparse.Namespace: Parsed arguments.
     """
     parser = argparse.ArgumentParser(
-        description="GUI application for blurring faces in images and videos using deface."
+        description="Privacy-first media tools for face blurring, redaction, and transcription."
     )
     parser.add_argument(
         "--log-level",
@@ -158,7 +159,7 @@ def build_deface_args(config: Dict[str, Any]) -> List[str]:
     """Build command-line arguments from configuration dictionary.
 
     Args:
-        config: Dictionary containing deface configuration options.
+        config: Dictionary containing Sightline configuration options.
 
     Returns:
         List of command-line argument strings.
@@ -214,8 +215,8 @@ def _find_deface_command() -> List[str]:
     exe_path = Path(sys.executable).resolve()
 
     # 1. When bundled, prefer a dedicated CLI binary shipped next to the app
-    #    (e.g. dist/Deface/deface-cli, Deface.app/Contents/MacOS/deface-cli,
-    #    or Deface.app/Contents/Frameworks/deface-cli on macOS).
+    #    (e.g. dist/Sightline/deface-cli, Sightline.app/Contents/MacOS/deface-cli,
+    #    or Sightline.app/Contents/Frameworks/deface-cli on macOS).
     is_bundled = getattr(sys, "_MEIPASS", None) is not None
     if is_bundled:
         candidates: List[Path] = []
@@ -231,8 +232,8 @@ def _find_deface_command() -> List[str]:
                 candidates.append(exe_path.parent / name)
         elif sys.platform == "darwin":
             # macOS .app layout:
-            #   .../Deface.app/Contents/MacOS/Deface       (sys.executable)
-            #   .../Deface.app/Contents/Frameworks/deface-cli  (bundled CLI)
+            #   .../Sightline.app/Contents/MacOS/Sightline       (sys.executable)
+            #   .../Sightline.app/Contents/Frameworks/deface-cli  (bundled CLI)
             contents_dir = exe_path.parent.parent
             for name in candidate_names:
                 candidates.append(contents_dir / "Frameworks" / name)
@@ -365,8 +366,8 @@ def validate_paths(input_path: str, output_dir: str) -> Tuple[bool, Optional[str
     return True, None
 
 
-class DefaceApp(ctk.CTk, TkinterDnD.Tk):
-    """Main application window for the Deface GUI.
+class SightlineApp(ctk.CTk, TkinterDnD.Tk):
+    """Main application window for the Sightline GUI.
 
     This class acts as the main application container and router,
     managing navigation between different views/pages.
@@ -649,7 +650,7 @@ def main():
     if args.log_file:
         logger.info(f"Logging to file: {args.log_file}")
 
-    app = DefaceApp()
+    app = SightlineApp()
     try:
         app.mainloop()
     except KeyboardInterrupt:

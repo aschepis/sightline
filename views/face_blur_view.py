@@ -1,4 +1,4 @@
-"""Face blur batch processing view for the Deface application.
+"""Face blur batch processing view for the Sightline application.
 
 This module contains the UI and logic for batch processing files with face blurring.
 """
