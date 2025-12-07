@@ -184,7 +184,7 @@ class VideoProcessor:
                 return None
 
             # Validate frame dimensions
-            if frame.shape[0] == 0 or frame.shape[1] == 0:
+            if frame.shape[0] == 0 or frame.shape[1] == 0:  # type: ignore[union-attr]
                 logger.warning(f"Frame {frame_number} has invalid dimensions")
                 return None
 
@@ -415,7 +415,7 @@ def apply_smudge_to_frame(frame: np.ndarray, operation: SmudgeOperation) -> np.n
         Modified frame with blur applied.
     """
     # Create mask for circular blur region
-    mask = create_circular_mask(frame.shape, operation.x, operation.y, operation.radius)
+    mask = create_circular_mask((frame.shape[0], frame.shape[1]), operation.x, operation.y, operation.radius)
 
     # Extract region to blur
     y_indices, x_indices = np.where(mask)
@@ -544,7 +544,7 @@ class FaceSmudgeWindow(ctk.CTkToplevel):
         """Initialize face smudge window.
 
         Args:
-            parent: Parent window (DefaceApp instance).
+            parent: Parent window (SightlineApp instance).
         """
         super().__init__(parent)
 
@@ -652,12 +652,12 @@ class FaceSmudgeWindow(ctk.CTkToplevel):
         ).pack(side="left", padx=10, pady=10)
 
         self.file_label = ctk.CTkLabel(
-            header_frame, text="No video loaded", font=ctk.CTkFont(size=12), text_color="gray"
+            header_frame, text="No video loaded", font=ctk.CTkFont(size=12), text_color="#8ea4c7"  # Mist Blue
         )
         self.file_label.pack(side="left", padx=10, pady=10)
 
         self.duration_label = ctk.CTkLabel(
-            header_frame, text="", font=ctk.CTkFont(size=12), text_color="gray"
+            header_frame, text="", font=ctk.CTkFont(size=12), text_color="#8ea4c7"  # Mist Blue
         )
         self.duration_label.pack(side="right", padx=10, pady=10)
 
@@ -669,7 +669,7 @@ class FaceSmudgeWindow(ctk.CTkToplevel):
             video_frame,
             text="Click 'Load Video' to select a video file",
             font=ctk.CTkFont(size=14),
-            fg_color=("gray75", "gray25"),
+            fg_color="#030922",  # Dark panel background
         )
         self.video_label.pack(fill="both", expand=True, padx=10, pady=10)
 
@@ -750,7 +750,7 @@ class FaceSmudgeWindow(ctk.CTkToplevel):
         self.scrubber.pack(fill="x", padx=10, pady=10)
 
         self.time_label = ctk.CTkLabel(
-            timeline_frame, text="00:00 / 00:00", font=ctk.CTkFont(size=11), text_color="gray"
+            timeline_frame, text="00:00 / 00:00", font=ctk.CTkFont(size=11), text_color="#8ea4c7"  # Mist Blue
         )
         self.time_label.pack(pady=(0, 10))
 
@@ -767,7 +767,7 @@ class FaceSmudgeWindow(ctk.CTkToplevel):
         self.progress_bar.set(0)
 
         self.operations_label = ctk.CTkLabel(
-            status_frame, text="Operations: 0 smudges", font=ctk.CTkFont(size=11), text_color="gray"
+            status_frame, text="Operations: 0 smudges", font=ctk.CTkFont(size=11), text_color="#8ea4c7"  # Mist Blue
         )
         self.operations_label.pack(side="left", padx=10, pady=10)
 
@@ -776,7 +776,7 @@ class FaceSmudgeWindow(ctk.CTkToplevel):
             status_frame,
             text="Status: Ready | Mouse: -- | Dragging: No",
             font=ctk.CTkFont(size=10),
-            text_color="gray",
+            text_color="#8ea4c7",  # Mist Blue
         )
         self.status_indicator.pack(side="right", padx=10, pady=10)
 
@@ -800,7 +800,7 @@ class FaceSmudgeWindow(ctk.CTkToplevel):
         save_btn.pack(side="right", padx=10, pady=10)
 
         cancel_btn = ctk.CTkButton(
-            button_frame, text="Cancel", command=self._on_cancel, width=100, height=30, fg_color="gray"
+            button_frame, text="Cancel", command=self._on_cancel, width=100, height=30, fg_color="#1a253a"  # Border subtle
         )
         cancel_btn.pack(side="right", padx=10, pady=10)
 
@@ -882,8 +882,8 @@ class FaceSmudgeWindow(ctk.CTkToplevel):
 
         # Get display size
         self.update_idletasks()
-        display_width = self.video_label.winfo_width()
-        display_height = self.video_label.winfo_height()
+        display_width = self.video_label.winfo_width()  # type: ignore[union-attr]
+        display_height = self.video_label.winfo_height()  # type: ignore[union-attr]
 
         if display_width <= 1 or display_height <= 1:
             # Widget not yet sized, use default
@@ -891,8 +891,8 @@ class FaceSmudgeWindow(ctk.CTkToplevel):
             display_height = 600
 
         # Calculate aspect-ratio-preserving size
-        video_width = self.video_processor.metadata.width
-        video_height = self.video_processor.metadata.height
+        video_width = self.video_processor.metadata.width  # type: ignore[union-attr]
+        video_height = self.video_processor.metadata.height  # type: ignore[union-attr]
         video_aspect = video_width / video_height
         display_aspect = display_width / display_height
 
@@ -912,7 +912,7 @@ class FaceSmudgeWindow(ctk.CTkToplevel):
         self.current_image = ImageTk.PhotoImage(pil_image)
 
         # Update label
-        self.video_label.configure(image=self.current_image, text="")
+        self.video_label.configure(image=self.current_image, text="")  # type: ignore[union-attr]
 
         # Store display dimensions for coordinate conversion
         self.video_display_width = new_width
@@ -1175,7 +1175,7 @@ class FaceSmudgeWindow(ctk.CTkToplevel):
         if operation.operation_id not in existing_ids:
             self.smudge_operations[operation.frame_number].append(operation)
             self.undo_manager.add_operation(operation)
-            self.frame_cache.invalidate_frame(operation.frame_number)
+            self.frame_cache.invalidate_frame(operation.frame_number)  # type: ignore[union-attr]
             self.undo_btn.configure(state="normal")
             logger.info(f"Operation saved successfully. Frame {operation.frame_number} now has {len(self.smudge_operations[operation.frame_number])} operation(s)")
         else:
@@ -1325,7 +1325,7 @@ class FaceSmudgeWindow(ctk.CTkToplevel):
                     del self.smudge_operations[operation.frame_number]
 
             # Invalidate frame cache
-            self.frame_cache.invalidate_frame(operation.frame_number)
+            self.frame_cache.invalidate_frame(operation.frame_number)  # type: ignore[union-attr]
 
             # Update display
             self._update_display()
@@ -1343,7 +1343,7 @@ class FaceSmudgeWindow(ctk.CTkToplevel):
         if messagebox.askyesno("Clear All", "Remove all smudge operations?"):
             self.smudge_operations.clear()
             self.undo_manager.clear()
-            self.frame_cache.clear()
+            self.frame_cache.clear()  # type: ignore[union-attr]
             self.undo_btn.configure(state="disabled")
             self._update_display()
             self._update_progress()
@@ -1371,10 +1371,10 @@ class FaceSmudgeWindow(ctk.CTkToplevel):
         )
 
         radius_var = tk.IntVar(value=self.blur_radius)
-        radius_slider = ctk.CTkSlider(radius_frame, from_=10, to=200, variable=radius_var, command=lambda v: self._update_radius_label(radius_label, v))
+        radius_slider = ctk.CTkSlider(radius_frame, from_=10, to=200, variable=radius_var, command=lambda v: self._update_radius_label(radius_label, v))  # type: ignore[has-type]
         radius_slider.pack(fill="x", padx=10, pady=(0, 5))
 
-        radius_label = ctk.CTkLabel(radius_frame, text=str(self.blur_radius), font=ctk.CTkFont(size=11), text_color="gray")
+        radius_label = ctk.CTkLabel(radius_frame, text=str(self.blur_radius), font=ctk.CTkFont(size=11), text_color="#8ea4c7")  # Mist Blue
         radius_label.pack(anchor="w", padx=10, pady=(0, 10))
 
         # Blur sigma
@@ -1386,10 +1386,10 @@ class FaceSmudgeWindow(ctk.CTkToplevel):
         )
 
         sigma_var = tk.DoubleVar(value=self.blur_sigma)
-        sigma_slider = ctk.CTkSlider(sigma_frame, from_=5, to=100, variable=sigma_var, command=lambda v: self._update_sigma_label(sigma_label, v))
+        sigma_slider = ctk.CTkSlider(sigma_frame, from_=5, to=100, variable=sigma_var, command=lambda v: self._update_sigma_label(sigma_label, v))  # type: ignore[has-type]
         sigma_slider.pack(fill="x", padx=10, pady=(0, 5))
 
-        sigma_label = ctk.CTkLabel(sigma_frame, text=str(int(self.blur_sigma)), font=ctk.CTkFont(size=11), text_color="gray")
+        sigma_label = ctk.CTkLabel(sigma_frame, text=str(int(self.blur_sigma)), font=ctk.CTkFont(size=11), text_color="#8ea4c7")  # Mist Blue
         sigma_label.pack(anchor="w", padx=10, pady=(0, 10))
 
         # Buttons
@@ -1406,7 +1406,7 @@ class FaceSmudgeWindow(ctk.CTkToplevel):
         ok_btn = ctk.CTkButton(button_frame, text="OK", command=on_ok, width=100)
         ok_btn.pack(side="right", padx=10)
 
-        cancel_btn = ctk.CTkButton(button_frame, text="Cancel", command=settings_window.destroy, width=100, fg_color="gray")
+        cancel_btn = ctk.CTkButton(button_frame, text="Cancel", command=settings_window.destroy, width=100, fg_color="#1a253a")  # Border subtle
         cancel_btn.pack(side="right", padx=10)
 
         settings_window.focus()
@@ -1471,7 +1471,7 @@ class FaceSmudgeWindow(ctk.CTkToplevel):
         progress_bar.pack(pady=10)
         progress_bar.set(0)
 
-        status_label = ctk.CTkLabel(progress_frame, text="Starting...", font=ctk.CTkFont(size=11), text_color="gray")
+        status_label = ctk.CTkLabel(progress_frame, text="Starting...", font=ctk.CTkFont(size=11), text_color="#8ea4c7")  # Mist Blue
         status_label.pack(pady=5)
 
         progress_window.update()
@@ -1479,19 +1479,19 @@ class FaceSmudgeWindow(ctk.CTkToplevel):
         # Encode video in thread
         def encode_video():
             try:
-                metadata = self.video_processor.metadata
+                metadata = self.video_processor.metadata  # type: ignore[union-attr]
                 if not metadata:
                     raise ValueError("No video metadata available")
 
                 # Check disk space (rough estimate)
                 estimated_size = metadata.width * metadata.height * metadata.frame_count * 3 / (1024 * 1024)  # MB
                 try:
-                    stat = os.statvfs(os.path.dirname(filename))
-                    free_space = stat.f_bavail * stat.f_frsize / (1024 * 1024)  # MB
+                    usage = shutil.disk_usage(os.path.dirname(filename))
+                    free_space = usage.free / (1024 * 1024)  # MB
                     if free_space < estimated_size * 1.5:
                         raise ValueError(f"Insufficient disk space. Estimated need: {estimated_size:.1f} MB, Available: {free_space:.1f} MB")
-                except (OSError, AttributeError):
-                    # statvfs not available on all platforms, skip check
+                except OSError:
+                    # disk_usage might fail on some platforms or permissions, skip check
                     pass
 
                 # Check write permissions
@@ -1504,12 +1504,12 @@ class FaceSmudgeWindow(ctk.CTkToplevel):
                     raise ValueError(f"Cannot write to output location: {str(e)}")
 
                 # Create temporary video file first
-                temp_video_fd, temp_video = tempfile.mkstemp(suffix=".mp4", prefix="deface_smudge_")
+                temp_video_fd, temp_video = tempfile.mkstemp(suffix=".mp4", prefix="sightline_smudge_")
                 os.close(temp_video_fd)  # Close file descriptor, we'll use the path with VideoWriter
 
                 try:
                     # Open video writer to temporary file
-                    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+                    fourcc = cv2.VideoWriter_fourcc(*"mp4v")  # type: ignore[attr-defined]
                     writer = cv2.VideoWriter(temp_video, fourcc, metadata.fps, (metadata.width, metadata.height))
 
                     if not writer.isOpened():
@@ -1526,7 +1526,7 @@ class FaceSmudgeWindow(ctk.CTkToplevel):
                         progress_window.update()
 
                         # Get frame
-                        frame = self.frame_cache.get_frame(frame_num)
+                        frame = self.frame_cache.get_frame(frame_num)  # type: ignore[union-attr]
                         if frame is None:
                             # Skip if frame cannot be read, but log warning
                             logger.warning(f"Skipping frame {frame_num} (could not be read)")
@@ -1570,11 +1570,14 @@ class FaceSmudgeWindow(ctk.CTkToplevel):
                 temp_audio = None  # Will be set if audio extraction is attempted
                 try:
                     # Check if ffmpeg is available
+                    # On Windows, use CREATE_NO_WINDOW to prevent console windows
+                    creationflags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
                     result = subprocess.run(
                         ["ffmpeg", "-version"],
                         stdout=subprocess.PIPE,
                         stderr=subprocess.PIPE,
                         timeout=5,
+                        creationflags=creationflags,
                     )
                     if result.returncode != 0:
                         raise FileNotFoundError("ffmpeg command failed")
@@ -1589,7 +1592,7 @@ class FaceSmudgeWindow(ctk.CTkToplevel):
                         "-select_streams", "a:0",
                         "-show_entries", "stream=codec_type",
                         "-of", "csv=p=0",
-                        self.video_processor.video_path,
+                        self.video_processor.video_path,  # type: ignore[union-attr]
                     ]
 
                     result = subprocess.run(
@@ -1597,6 +1600,7 @@ class FaceSmudgeWindow(ctk.CTkToplevel):
                         stdout=subprocess.PIPE,
                         stderr=subprocess.PIPE,
                         timeout=10,
+                        creationflags=creationflags,
                     )
 
                     if result.returncode == 0 and result.stdout.strip():
@@ -1617,13 +1621,13 @@ class FaceSmudgeWindow(ctk.CTkToplevel):
                         progress_window.update()
 
                         # Create temporary audio file
-                        temp_audio_fd, temp_audio = tempfile.mkstemp(suffix=".m4a", prefix="deface_audio_")
+                        temp_audio_fd, temp_audio = tempfile.mkstemp(suffix=".m4a", prefix="sightline_audio_")
                         os.close(temp_audio_fd)
 
                         # Extract audio from original video
                         extract_audio_cmd = [
                             "ffmpeg",
-                            "-i", self.video_processor.video_path,
+                            "-i", self.video_processor.video_path,  # type: ignore[union-attr]
                             "-vn",  # No video
                             "-acodec", "copy",  # Copy audio codec
                             "-y",  # Overwrite output file
@@ -1635,6 +1639,7 @@ class FaceSmudgeWindow(ctk.CTkToplevel):
                             stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE,
                             timeout=60,
+                            creationflags=creationflags,
                         )
 
                         if result.returncode != 0:
@@ -1664,6 +1669,7 @@ class FaceSmudgeWindow(ctk.CTkToplevel):
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE,
                                 timeout=300,  # 5 minutes max
+                                creationflags=creationflags,
                             )
 
                             if result.returncode == 0 and os.path.exists(filename):

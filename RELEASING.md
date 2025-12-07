@@ -1,6 +1,6 @@
 # Release Process
 
-This document describes how to create a new release of Deface, including building and distributing signed binaries for macOS, Windows, and Linux.
+This document describes how to create a new release of Sightline, including building and distributing signed binaries for macOS, Windows, and Linux.
 
 ## Overview
 
@@ -31,7 +31,7 @@ You need to set up GitHub secrets for signing. See [Setting Up GitHub Secrets](#
 
 1. **Update version numbers** in relevant files:
 
-   - `deface.spec` (CFBundleVersion and CFBundleShortVersionString in info_plist)
+   - `sightline.spec` (CFBundleVersion and CFBundleShortVersionString in info_plist)
    - Update `CHANGELOG.md` with new version notes
 
 2. **Commit your changes**:
@@ -147,7 +147,7 @@ An app-specific password for notarization.
 2. Sign in with your Apple ID
 3. In the "Sign-In and Security" section, click "App-Specific Passwords"
 4. Click "Generate an app-specific password"
-5. Enter a label (e.g., "Deface Notarization")
+5. Enter a label (e.g., "Sightline Notarization")
 6. Copy the generated password and save it as the secret
 
 ### Optional: Windows Code Signing
@@ -221,22 +221,22 @@ Use these commands to inspect and verify the signature:
 
 ```bash
 # Basic signature verification
-codesign --verify --verbose=4 dist/Deface.app
+codesign --verify --verbose=4 dist/Sightline.app
 
 # Display detailed signing information
-codesign --display --verbose=4 dist/Deface.app
+codesign --display --verbose=4 dist/Sightline.app
 
 # Verify all nested code (deep verification)
-codesign --verify --deep --strict --verbose=2 dist/Deface.app
+codesign --verify --deep --strict --verbose=2 dist/Sightline.app
 
 # Check if it will pass Gatekeeper
-spctl --assess --verbose=4 --type execute dist/Deface.app
+spctl --assess --verbose=4 --type execute dist/Sightline.app
 
 # Check notarization status
-stapler validate dist/Deface.app
+stapler validate dist/Sightline.app
 
 # Find unsigned components (if verification fails)
-find dist/Deface.app -type f \( -name "*.dylib" -o -name "*.so" -o -perm +111 \) | while read file; do
+find dist/Sightline.app -type f \( -name "*.dylib" -o -name "*.so" -o -perm +111 \) | while read file; do
   codesign --verify "$file" 2>&1 | grep -q "not signed" && echo "Unsigned: $file"
 done
 ```
@@ -244,7 +244,7 @@ done
 **Expected output for properly signed app:**
 
 - `codesign --verify`: No output (success)
-- `spctl --assess`: `dist/Deface.app: accepted`
+- `spctl --assess`: `dist/Sightline.app: accepted`
 - `stapler validate`: `The validate action worked!` (if notarized)
 
 ### Windows
@@ -255,15 +255,15 @@ Requires Windows machine with Conda and Inno Setup installed.
 
 ```bash
 # Set up conda environment
-conda create -n deface-build python=3.12
-conda activate deface-build
+conda create -n sightline-build python=3.12
+conda activate sightline-build
 
 # Install dependencies
 pip install -r requirements.txt
 pip install pyinstaller
 
 # Build executable
-python -m PyInstaller deface.spec --clean --noconfirm
+python -m PyInstaller sightline.spec --clean --noconfirm
 
 # Create installer (set version)
 set APP_VERSION=1.2.3
@@ -278,19 +278,19 @@ The installer will be created in the `Output/` directory.
 
 ```bash
 # Set up conda environment
-conda create -n deface-build python=3.12
-conda activate deface-build
+conda create -n sightline-build python=3.12
+conda activate sightline-build
 
 # Install dependencies
 pip install -r requirements.txt
 pip install pyinstaller
 
 # Build executable
-python -m PyInstaller deface.spec --clean --noconfirm
+python -m PyInstaller sightline.spec --clean --noconfirm
 
 # Create tarball
 cd dist
-tar -czf Deface-1.2.3-Linux-x86_64.tar.gz Deface/
+tar -czf Sightline-1.2.3-Linux-x86_64.tar.gz Sightline/
 ```
 
 ## Troubleshooting
@@ -325,7 +325,7 @@ tar -czf Deface-1.2.3-Linux-x86_64.tar.gz Deface/
 **Error: "PyInstaller not found"**
 
 - Make sure pyinstaller is installed in the conda environment
-- Try: `conda run -n deface-build pip install pyinstaller`
+- Try: `conda run -n sightline-build pip install pyinstaller`
 
 **Error: "Inno Setup not found"**
 
@@ -340,7 +340,7 @@ Usually related to missing system libraries. Check PyInstaller output for specif
 
 Update version numbers in these locations before releasing:
 
-1. **deface.spec**: Update `CFBundleVersion` and `CFBundleShortVersionString` in the `info_plist` dictionary
+1. **sightline.spec**: Update `CFBundleVersion` and `CFBundleShortVersionString` in the `info_plist` dictionary
 2. **CHANGELOG.md**: Add release notes for the new version
 3. **Git tag**: Create matching version tag (e.g., `v1.2.3`)
 

@@ -1,14 +1,8 @@
-"""Dialog windows for the Sightline application.
-
-This module contains custom dialog classes used in the Sightline GUI:
-- LogDialog: Display error logs for individual files
-- ConfigDialog: Configure Sightline processing options
-"""
+"""Configuration dialog for Sightline options."""
 
 import importlib
 import logging
 import sys
-import webbrowser
 import tkinter as tk
 from tkinter import messagebox
 from typing import Any, Dict, Optional
@@ -18,7 +12,9 @@ try:
 except ImportError:
     raise ImportError("customtkinter is required for dialog windows")
 
-# Get version from main module, handling potential circular imports
+logger = logging.getLogger(__name__)
+
+
 def _get_version() -> str:
     """Get the application version from main module."""
     try:
@@ -32,95 +28,17 @@ def _get_version() -> str:
     except (ImportError, AttributeError):
         return "1.0.0"
 
-__version__ = _get_version()
-
-logger = logging.getLogger(__name__)
-
-class LogDialog(ctk.CTkToplevel):
-    """Dialog for displaying error logs."""
-
-    def __init__(self, parent, filename: str, log_text: str):
-        super().__init__(parent)
-
-        self.title(f"Error Logs - {filename}")
-        self.geometry("800x600")
-        self.resizable(True, True)
-
-        # Make dialog modal
-        self.transient(parent)
-        self.grab_set()
-
-        # Create widgets
-        self._create_widgets(log_text)
-
-        # Center dialog on parent
-        self._center_on_parent()
-
-        # Focus on dialog
-        self.focus()
-
-    def _center_on_parent(self):
-        """Center the dialog on its parent window."""
-        self.update_idletasks()
-
-        parent_x = self.master.winfo_x()
-        parent_y = self.master.winfo_y()
-        parent_width = self.master.winfo_width()
-        parent_height = self.master.winfo_height()
-
-        dialog_width = self.winfo_width()
-        dialog_height = self.winfo_height()
-
-        x = parent_x + (parent_width // 2) - (dialog_width // 2)
-        y = parent_y + (parent_height // 2) - (dialog_height // 2)
-
-        self.geometry(f"+{x}+{y}")
-
-    def _create_widgets(self, log_text: str):
-        """Create and layout all dialog widgets."""
-        main_frame = ctk.CTkFrame(self)
-        main_frame.pack(fill="both", expand=True, padx=20, pady=20)
-
-        title_label = ctk.CTkLabel(
-            main_frame,
-            text="Error Logs",
-            font=ctk.CTkFont(size=20, weight="bold"),
-        )
-        title_label.pack(pady=(0, 10))
-
-        log_textbox = ctk.CTkTextbox(
-            main_frame,
-            font=("Courier", 11),
-            wrap="word",
-        )
-        log_textbox.pack(fill="both", expand=True, pady=(0, 10))
-        log_textbox.insert("1.0", log_text)
-        log_textbox.configure(state="disabled")
-
-        button_frame = ctk.CTkFrame(main_frame)
-        button_frame.pack(fill="x")
-
-        close_btn = ctk.CTkButton(
-            button_frame,
-            text="Close",
-            command=self.destroy,
-            width=100,
-        )
-        close_btn.pack(side="right", padx=10)
-
-        self.bind("<Escape>", lambda e: self.destroy())
-
 
 class ConfigDialog(ctk.CTkToplevel):
     """Configuration dialog for Sightline options."""
 
     MAX_BATCH_SIZE = 8
 
-    def __init__(self, parent, config: Dict[str, Any]):
+    def __init__(self, parent, config: Dict[str, Any], full_config: Optional[Dict[str, Any]] = None):
         super().__init__(parent)
 
         self.title("Sightline Configuration")
-        self.geometry("600x650")
+        self.geometry("600x700")
         self.resizable(False, False)
 
         # Make dialog modal
@@ -129,7 +47,9 @@ class ConfigDialog(ctk.CTkToplevel):
 
         # Store configuration
         self.config = config.copy()
+        self.full_config = full_config or {}
         self.result: Optional[Dict[str, Any]] = None
+        self.hugging_face_token: str = ""
 
         # Create widgets
         self._create_widgets()
@@ -159,18 +79,21 @@ class ConfigDialog(ctk.CTkToplevel):
 
     def _create_widgets(self):
         """Create and layout all dialog widgets."""
-        main_frame = ctk.CTkFrame(self)
+        main_frame = ctk.CTkFrame(self, border_width=0)
         main_frame.pack(fill="both", expand=True, padx=20, pady=20)
 
         title_label = ctk.CTkLabel(
             main_frame,
-            text="Deface Configuration",
+            text="Sightline Configuration",
             font=ctk.CTkFont(size=20, weight="bold"),
         )
         title_label.pack(pady=(0, 20))
 
         scrollable_frame = ctk.CTkScrollableFrame(main_frame)
         scrollable_frame.pack(fill="both", expand=True, pady=(0, 20))
+
+
+        self._create_section_header(scrollable_frame, "Face Blur Settings")
 
         # Detection threshold
         self._create_threshold_section(scrollable_frame)
@@ -192,6 +115,13 @@ class ConfigDialog(ctk.CTkToplevel):
 
         # Keep metadata
         self._create_metadata_section(scrollable_frame)
+
+        self._create_section_header(scrollable_frame, "Transcription Settings")
+
+        # Hugging Face token
+        self._create_hugging_face_token_section(scrollable_frame)
+
+        self._create_section_header(scrollable_frame, "Batch Processing Settings")
 
         # Batch size
         self._create_batch_size_section(scrollable_frame)
@@ -375,9 +305,31 @@ class ConfigDialog(ctk.CTkToplevel):
         self.batch_size_entry.insert(0, str(self.config.get("batch_size", 1)))
         self.batch_size_entry.pack(anchor="w", padx=10, pady=(0, 10))
 
+    def _create_hugging_face_token_section(self, parent):
+        """Create Hugging Face token configuration section."""
+        frame = ctk.CTkFrame(parent)
+        frame.pack(fill="x", pady=5, padx=10)
+
+        ctk.CTkLabel(
+            frame, text="Hugging Face Token:", font=ctk.CTkFont(size=12)
+        ).pack(anchor="w", padx=10, pady=(10, 5))
+
+        ctk.CTkLabel(
+            frame,
+            text="Token for accessing Hugging Face models (required for transcription features)",
+            font=ctk.CTkFont(size=10),
+            text_color="#8ea4c7",  # Mist Blue
+        ).pack(anchor="w", padx=10, pady=(0, 5))
+
+        self.hf_token_entry = ctk.CTkEntry(frame, width=400)
+        current_token = self.full_config.get("hugging_face_token", "")
+        if current_token:
+            self.hf_token_entry.insert(0, current_token)
+        self.hf_token_entry.pack(anchor="w", padx=10, pady=(0, 10))
+
     def _create_button_section(self, parent):
         """Create dialog button section."""
-        button_frame = ctk.CTkFrame(parent)
+        button_frame = ctk.CTkFrame(parent, border_width=0, fg_color="transparent")
         button_frame.pack(fill="x", pady=(0, 0))
 
         ok_btn = ctk.CTkButton(button_frame, text="OK", command=self._on_ok, width=100)
@@ -515,6 +467,10 @@ class ConfigDialog(ctk.CTkToplevel):
                 return
             config["batch_size"] = batch_size
 
+            # Store Hugging Face token separately (it's not part of sightline_config)
+            # TODO: it IS part of sightline_config. Figure out whats happening here and fix/remove this.
+            self.hugging_face_token = self.hf_token_entry.get().strip()
+
             self.result = config
             self.destroy()
 
@@ -527,147 +483,7 @@ class ConfigDialog(ctk.CTkToplevel):
         self.result = None
         self.destroy()
 
-class InfoDialog(ctk.CTkToplevel):
-    """Info dialog for Sightline."""
-
-    # Uicons by <a href="https://www.flaticon.com/uicons">Flaticon</a>
-
-    def __init__(self, parent):
-        super().__init__(parent)
-
-        self.title("Info")
-        self.geometry("600x600")
-        self.resizable(False, False)
-
-        # Make dialog modal
-        self.transient(parent)
-        self.grab_set()
-
-        # Create widgets
-        self._create_widgets()
-
-        # Center dialog on parent
-        self._center_on_parent()
-
-        # Focus on dialog
-        self.focus()
-
-    def _center_on_parent(self):
-        """Center the dialog on its parent window."""
-        self.update_idletasks()
-
-        parent_x = self.master.winfo_x()
-        parent_y = self.master.winfo_y()
-        parent_width = self.master.winfo_width()
-        parent_height = self.master.winfo_height()
-
-        dialog_width = self.winfo_width()
-        dialog_height = self.winfo_height()
-
-        x = parent_x + (parent_width // 2) - (dialog_width // 2)
-        y = parent_y + (parent_height // 2) - (dialog_height // 2)
-
-        self.geometry(f"+{x}+{y}")
-
-    def _create_widgets(self):
-        """Create and layout all dialog widgets."""
-        main_frame = ctk.CTkFrame(self)
-        main_frame.pack(fill="both", expand=True, padx=20, pady=20)
-
-        # App title
-        title_label = ctk.CTkLabel(
-            main_frame,
-            text="Sightline",
-            font=ctk.CTkFont(size=24, weight="bold"),
-        )
-        title_label.pack(pady=(0, 5))
-
-        # Version
-        version_label = ctk.CTkLabel(
-            main_frame,
-            text=f"Version {__version__}",
-            font=ctk.CTkFont(size=14),
-            text_color="#8ea4c7",  # Mist Blue
-        )
-        version_label.pack(pady=(0, 20))
-
-        # Creator section
-        creator_frame = ctk.CTkFrame(main_frame)
-        creator_frame.pack(fill="x", pady=(0, 10))
-
-        creator_label = ctk.CTkLabel(
-            creator_frame,
-            text="Created by Adam Schepis",
-            font=ctk.CTkFont(size=12),
-        )
-        creator_label.pack(anchor="w", padx=10, pady=(10, 5))
-
-        website_button = ctk.CTkButton(
-            creator_frame,
-            text="https://linktr.ee/aschepis",
-            command=lambda: webbrowser.open("https://linktr.ee/aschepis"),
-            fg_color="transparent",
-            text_color=("blue", "light blue"),
-            hover_color=("light gray", "dark gray"),
-            anchor="w",
-            width=200,
-        )
-        website_button.pack(anchor="w", padx=10, pady=(0, 10))
-
-        # Attributions section
-        attributions_label = ctk.CTkLabel(
-            main_frame,
-            text="Attributions",
-            font=ctk.CTkFont(size=14, weight="bold"),
-        )
-        attributions_label.pack(anchor="w", pady=(10, 5))
-
-        # Scrollable text area for attributions
-        attributions_textbox = ctk.CTkTextbox(
-            main_frame,
-            font=ctk.CTkFont(size=11),
-            wrap="word",
-        )
-        attributions_textbox.pack(fill="both", expand=True, pady=(0, 10))
-
-        # Build attributions text
-        attributions_text = """Icons
-Uicons by Flaticon
-https://www.flaticon.com/uicons
-
-Libraries
-• deface - Face detection and blurring library
-  https://github.com/ORB-HD/deface
-
-• CustomTkinter - Modern GUI framework
-  https://github.com/TomSchimansky/CustomTkinter
-
-• tkinterdnd2 - Drag and drop support
-  https://github.com/pmgagne/tkinterdnd2
-
-• OpenCV - Computer vision library
-  https://opencv.org/
-
-• NumPy - Numerical computing
-  https://numpy.org/
-
-• Pillow - Image processing
-  https://python-pillow.org/"""
-
-        attributions_textbox.insert("1.0", attributions_text)
-        attributions_textbox.configure(state="disabled")
-
-        # Close button
-        button_frame = ctk.CTkFrame(main_frame)
-        button_frame.pack(fill="x")
-
-        close_btn = ctk.CTkButton(
-            button_frame,
-            text="Close",
-            command=self.destroy,
-            width=100,
-        )
-        close_btn.pack(side="right", padx=10)
-
-        # Bind keyboard shortcuts
-        self.bind("<Escape>", lambda e: self.destroy())
+    def _create_section_header(self, parent, text):
+        """Create a section header."""
+        header = ctk.CTkLabel(parent, text=text, font=ctk.CTkFont(size=16, weight="bold"))
+        header.pack(anchor="w", padx=10, pady=(0, 10))

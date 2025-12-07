@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="Deface - A cross-platform GUI application for blurring faces in images and videos"
+      content="Sightline - Privacy-first media tools for face blurring, redaction, and transcription."
     />
-    <title>Deface - Face Blurring Made Easy</title>
+    <title>Sightline - Local Machine, Privacy-First Media Tools</title>
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
@@ -15,15 +15,15 @@
     <header>
       <nav class="container">
         <div class="logo">
-          <img src="icon.png" alt="Deface Logo" class="logo-img" />
-          <span class="logo-text">Deface</span>
+          <img src="icon.png" alt="Sightline Logo" class="logo-img" />
+          <span class="logo-text">SIGHTLINE</span>
         </div>
         <div class="nav-links">
           <a href="#features">Features</a>
           <a href="#download">Download</a>
           <a href="#about">About</a>
           <a
-            href="https://github.com/aschepis/deface-app"
+            href="https://github.com/aschepis/sightline"
             class="github-link"
             target="_blank"
           >
@@ -42,15 +42,15 @@
     <section class="hero">
       <div class="container">
         <div class="hero-content">
-          <h1>Blur Faces with Ease</h1>
+          <h1>Privacy-First Media Tools</h1>
           <p class="hero-subtitle">
-            A powerful, cross-platform application for protecting privacy in
-            your images and videos
+            Powerful tools for face blurring, manual redaction,
+            and audio transcription in a single application.
           </p>
           <div class="hero-buttons">
             <a href="#download" class="btn btn-primary">Download Now</a>
             <a
-              href="https://github.com/aschepis/deface-app"
+              href="https://github.com/aschepis/sightline"
               class="btn btn-secondary"
               target="_blank"
               >View on GitHub</a
@@ -65,14 +65,30 @@
     <section class="screenshot-section">
       <div class="container">
         <div class="screenshot-wrapper">
-          <img
-            src="deface-screenshot.png"
-            alt="Deface Application Screenshot"
-            class="screenshot"
-          />
-          <div class="screenshot-caption">
-            Simple, intuitive interface for batch processing
+          <div class="carousel-slide fade">
+            <img
+              src="sightline_screenshot_home.png"
+              alt="Sightline Home View"
+              class="screenshot"
+            />
           </div>
+          <div class="carousel-slide fade">
+            <img
+              src="sightline_screenshot_batch.png"
+              alt="Sightline Batch Processing"
+              class="screenshot"
+            />
+          </div>
+          <div class="carousel-slide fade">
+            <img
+              src="sightline_screenshot_smudge.png"
+              alt="Sightline Manual Redaction"
+              class="screenshot"
+            />
+          </div>
+
+          <a class="prev" onclick="plusSlides(-1)">&#10094;</a>
+          <a class="next" onclick="plusSlides(1)">&#10095;</a>
         </div>
       </div>
     </section>
@@ -80,14 +96,30 @@
     <!-- Features Section -->
     <section id="features" class="features">
       <div class="container">
-        <h2>Features</h2>
+        <h2>Capabilities</h2>
         <div class="features-grid">
           <div class="feature-card">
-            <div class="feature-icon">🖼️</div>
-            <h3>Images & Videos</h3>
+            <div class="feature-icon">👤</div>
+            <h3>Face Blurring</h3>
             <p>
-              Process both images and video files with support for multiple
-              formats including JPG, PNG, MP4, and more
+              Automatically detect and blur faces in images and videos to
+              protect privacy with configurable thresholds and mask scaling.
+            </p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">🎨</div>
+            <h3>Manual Redaction</h3>
+            <p>
+              Precise manual "smudge" tool for obscuring specific details or
+              refining automated results.
+            </p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">🎙️</div>
+            <h3>Audio Transcription</h3>
+            <p>
+              Convert speech to text with support for various models and
+              languages, perfect for creating subtitles or transcripts.
             </p>
           </div>
           <div class="feature-card">
@@ -95,39 +127,23 @@
             <h3>Batch Processing</h3>
             <p>
               Process multiple files simultaneously with configurable batch size
-              for maximum efficiency
-            </p>
-          </div>
-          <div class="feature-card">
-            <div class="feature-icon">🖥️</div>
-            <h3>Cross-Platform</h3>
-            <p>
-              Works seamlessly on Windows, macOS, and Linux with native look and
-              feel
-            </p>
-          </div>
-          <div class="feature-card">
-            <div class="feature-icon">🎨</div>
-            <h3>Easy to Use</h3>
-            <p>
-              Simple drag-and-drop interface with real-time progress tracking
-              and error handling
+              for maximum efficiency.
             </p>
           </div>
           <div class="feature-card">
             <div class="feature-icon">🔒</div>
             <h3>Privacy First</h3>
             <p>
-              All processing happens locally on your machine - no cloud uploads
-              or data sharing
+              All processing happens locally on your machine. No cloud uploads,
+              no data sharing, just secure local computation.
             </p>
           </div>
           <div class="feature-card">
-            <div class="feature-icon">⚙️</div>
-            <h3>Customizable</h3>
+            <div class="feature-icon">🖥️</div>
+            <h3>Cross-Platform</h3>
             <p>
-              Advanced settings for detection thresholds, mask scaling, and
-              output options
+              Works seamlessly on Windows, macOS, and Linux with a consistent,
+              modern interface.
             </p>
           </div>
         </div>
@@ -137,13 +153,24 @@
     <!-- Download Section -->
     <section id="download" class="download">
       <div class="container">
-        <h2>Download Deface</h2>
+        <h2>Get Sightline</h2>
         <p class="download-subtitle">
           Version 0.1.11 • Available for Windows, macOS, and Linux
         </p>
         <div class="download-main">
-          <a href="https://github.com/aschepis/deface-app/releases/latest" class="btn btn-download-main" target="_blank">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <a
+            href="https://github.com/aschepis/sightline/releases/latest"
+            class="btn btn-download-main"
+            target="_blank"
+          >
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
               <polyline points="7 10 12 15 17 10"></polyline>
               <line x1="12" y1="15" x2="12" y2="3"></line>
@@ -154,7 +181,7 @@
         <div class="source-note">
           <p>
             Prefer to build from source? Visit the
-            <a href="https://github.com/aschepis/deface-app" class="source-link"
+            <a href="https://github.com/aschepis/sightline" class="source-link"
               >GitHub repository</a
             >
             for instructions.
@@ -166,39 +193,71 @@
     <!-- About Section -->
     <section id="about" class="about">
       <div class="container">
-        <h2>About Deface</h2>
+        <h2>About Sightline</h2>
         <div class="about-content">
           <div class="about-text">
             <p>
-              Deface is a user-friendly application built to make face blurring
-              accessible to everyone. Whether you're protecting privacy in
-              street photography, preparing content for publication, or ensuring
-              GDPR compliance, Deface provides a simple solution.
+              Sightline is a suite of privacy-aware media
+              tools. Built to make professional-grade redaction and processing
+              accessible to everyone, it combines powerful automation with
+              intuitive controls.
             </p>
             <p>
-              Built on the powerful
-              <a href="https://github.com/ORB-HD/deface" target="_blank"
-                >deface library</a
-              >, the application combines state-of-the-art face detection with
-              an intuitive interface. All processing happens locally on your
-              machine, ensuring your data stays private and secure.
+              Whether you're a journalist protecting sources, a researcher
+              anonymizing data, or a creator preparing content, Sightline
+              ensures your work remains private and secure by performing all
+              operations locally on your device.
             </p>
-            <h3>How It Works</h3>
-            <ol>
+            <h3>Core Technologies</h3>
+            <p>
+              Sightline is built on the shoulders of giants. It leverages
+              state-of-the-art open source libraries including:
+            </p>
+            <ul>
               <li>
-                Select your images or videos using the file browser or
-                drag-and-drop
+                <a href="https://github.com/ORB-HD/deface" target="_blank"
+                  >deface</a
+                >
+                - Face detection and blurring
               </li>
-              <li>Choose your output directory</li>
-              <li>Click "Start" to begin batch processing</li>
-              <li>Monitor real-time progress with ETA and speed indicators</li>
-              <li>Find your processed files in the output folder</li>
-            </ol>
+              <li>
+                <a href="https://github.com/m-bain/whisperX" target="_blank"
+                  >WhisperX</a
+                >
+                - Fast speech-to-text and alignment
+              </li>
+              <li>
+                <a
+                  href="https://github.com/pyannote/pyannote-audio"
+                  target="_blank"
+                  >pyannote.audio</a
+                >
+                - Speaker diarization
+              </li>
+              <li>
+                <a href="https://github.com/pmgagne/tkinterdnd2" target="_blank"
+                  >tkinterdnd2</a
+                >
+                - Drag and drop support
+              </li>
+              <li>
+                <a href="https://opencv.org/" target="_blank">OpenCV</a>
+                - Computer vision
+              </li>
+              <li>
+                <a href="https://numpy.org/" target="_blank">NumPy</a>
+                - Numerical computing
+              </li>
+              <li>
+                <a href="https://python-pillow.org/" target="_blank">Pillow</a>
+                - Image processing
+              </li>
+            </ul>
             <h3>Open Source</h3>
             <p>
-              Deface is open source and available under the MIT License.
+              Sightline is open source and available under the MIT License.
               Contributions, bug reports, and feature requests are welcome on
-              <a href="https://github.com/aschepis/deface-app" target="_blank"
+              <a href="https://github.com/aschepis/sightline" target="_blank"
                 >GitHub</a
               >.
             </p>
@@ -210,23 +269,59 @@
     <!-- Footer -->
     <footer>
       <div class="container">
-        <p>&copy; 2025 Deface. Released under the MIT License.</p>
+        <p><div>Created with resolve and ❤️ by <a href="https://linktr.ee/aschepis" target="_blank">Adam Schepis</a>. ✊</div><div>Released under the MIT License.</div></p>
         <p>
-          <a href="https://github.com/aschepis/deface-app" target="_blank"
+          <a href="https://github.com/aschepis/sightline" target="_blank"
             >GitHub</a
           >
           •
           <a
-            href="https://github.com/aschepis/deface-app/issues"
+            href="https://github.com/aschepis/sightline/issues"
             target="_blank"
             >Report Issue</a
-          >
-          •
-          <a href="https://github.com/ORB-HD/deface" target="_blank"
-            >Powered by deface</a
           >
         </p>
       </div>
     </footer>
+
+    <script>
+      let slideIndex = 1;
+      let slideTimer;
+
+      showSlides(slideIndex);
+
+      // Start auto loop
+      startSlideShow();
+
+      function plusSlides(n) {
+        // Reset timer on manual interaction
+        clearTimeout(slideTimer);
+        showSlides(slideIndex += n);
+        startSlideShow();
+      }
+
+      function currentSlide(n) {
+        clearTimeout(slideTimer);
+        showSlides(slideIndex = n);
+        startSlideShow();
+      }
+
+      function showSlides(n) {
+        let i;
+        let slides = document.getElementsByClassName("carousel-slide");
+        if (n > slides.length) {slideIndex = 1}
+        if (n < 1) {slideIndex = slides.length}
+        for (i = 0; i < slides.length; i++) {
+          slides[i].style.display = "none";
+        }
+        slides[slideIndex-1].style.display = "block";
+      }
+
+      function startSlideShow() {
+        slideTimer = setTimeout(function() {
+          plusSlides(1);
+        }, 5000); // Change image every 5 seconds
+      }
+    </script>
   </body>
 </html>

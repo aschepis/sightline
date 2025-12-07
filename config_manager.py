@@ -1,4 +1,4 @@
-"""Configuration persistence manager for deface-app.
+"""Configuration persistence manager for Sightline.
 
 This module handles loading and saving application configuration to disk.
 Uses platform-appropriate storage when possible, falls back to a JSON file
@@ -15,18 +15,18 @@ from typing import Any, Dict, Optional
 logger = logging.getLogger(__name__)
 
 # Configuration file name (hidden file in home directory)
-CONFIG_FILENAME = ".deface-app.json"
+CONFIG_FILENAME = ".sightline.json"
 
 
 def get_config_path() -> Path:
     """Get the path to the configuration file.
 
     Uses platform-appropriate storage when possible:
-    - macOS: ~/Library/Application Support/deface-app/config.json
-    - Windows: %APPDATA%/deface-app/config.json
-    - Linux: ~/.config/deface-app/config.json
+    - macOS: ~/Library/Application Support/sightline/config.json
+    - Windows: %APPDATA%/sightline/config.json
+    - Linux: ~/.config/sightline/config.json
 
-    Falls back to ~/.deface-app.json if platform-specific paths aren't available.
+    Falls back to ~/.sightline.json if platform-specific paths aren't available.
 
     Returns:
         Path to the configuration file.
@@ -35,18 +35,18 @@ def get_config_path() -> Path:
 
     # Try platform-specific paths first
     if sys.platform == "darwin":  # macOS
-        config_dir = home / "Library" / "Application Support" / "deface-app"
+        config_dir = home / "Library" / "Application Support" / "sightline"
         config_file = config_dir / "config.json"
     elif sys.platform == "win32":  # Windows
         appdata = os.environ.get("APPDATA")
         if appdata:
-            config_dir = Path(appdata) / "deface-app"
+            config_dir = Path(appdata) / "sightline"
             config_file = config_dir / "config.json"
         else:
             # Fallback to home directory
             config_file = home / CONFIG_FILENAME
     else:  # Linux and other Unix-like systems
-        config_dir = home / ".config" / "deface-app"
+        config_dir = home / ".config" / "sightline"
         config_file = config_dir / "config.json"
 
     # Test if we can write to the platform-specific path
@@ -66,6 +66,33 @@ def get_config_path() -> Path:
     return config_file
 
 
+def get_legacy_config_path() -> Path:
+    """Get the path to the legacy configuration file (deface-app).
+
+    Returns:
+        Path to the legacy configuration file.
+    """
+    home = Path.home()
+
+    # Try platform-specific paths first
+    if sys.platform == "darwin":  # macOS
+        config_dir = home / "Library" / "Application Support" / "deface-app"
+        config_file = config_dir / "config.json"
+    elif sys.platform == "win32":  # Windows
+        appdata = os.environ.get("APPDATA")
+        if appdata:
+            config_dir = Path(appdata) / "deface-app"
+            config_file = config_dir / "config.json"
+        else:
+            # Fallback to home directory
+            config_file = home / ".deface-app.json"
+    else:  # Linux and other Unix-like systems
+        config_dir = home / ".config" / "deface-app"
+        config_file = config_dir / "config.json"
+
+    return config_file
+
+
 def load_config() -> Dict[str, Any]:
     """Load configuration from disk.
 
@@ -76,8 +103,14 @@ def load_config() -> Dict[str, Any]:
     config_path = get_config_path()
 
     if not config_path.exists():
-        logger.debug(f"Config file does not exist: {config_path}")
-        return get_default_config()
+        # Check for legacy config
+        legacy_path = get_legacy_config_path()
+        if legacy_path.exists():
+            logger.info(f"Found legacy configuration at: {legacy_path}")
+            config_path = legacy_path
+        else:
+            logger.debug(f"Config file does not exist: {config_path}")
+            return get_default_config()
 
     try:
         with open(config_path, "r", encoding="utf-8") as f:
@@ -116,6 +149,43 @@ def save_config(config: Dict[str, Any]) -> bool:
         return False
 
 
+def get_models_path() -> Path:
+    """Get the path where transcription models should be stored.
+
+    Uses platform-appropriate storage:
+    - macOS: ~/Library/Application Support/sightline/models
+    - Windows: %APPDATA%/sightline/models
+    - Linux: ~/.config/sightline/models
+
+    Returns:
+        Path to the models directory.
+    """
+    home = Path.home()
+
+    # Use platform-specific paths
+    if sys.platform == "darwin":  # macOS
+        models_dir = home / "Library" / "Application Support" / "sightline" / "models"
+    elif sys.platform == "win32":  # Windows
+        appdata = os.environ.get("APPDATA")
+        if appdata:
+            models_dir = Path(appdata) / "sightline" / "models"
+        else:
+            models_dir = home / ".sightline" / "models"
+    else:  # Linux and other Unix-like systems
+        models_dir = home / ".config" / "sightline" / "models"
+
+    # Create directory if it doesn't exist
+    try:
+        models_dir.mkdir(parents=True, exist_ok=True)
+    except (OSError, PermissionError) as e:
+        logger.warning(f"Could not create models directory {models_dir}: {e}")
+        # Fallback to home directory
+        models_dir = home / ".sightline" / "models"
+        models_dir.mkdir(parents=True, exist_ok=True)
+
+    return models_dir
+
+
 def get_default_config() -> Dict[str, Any]:
     """Get default configuration values.
 
@@ -133,6 +203,7 @@ def get_default_config() -> Dict[str, Any]:
             "keep_metadata": True,
             "batch_size": 1,
         },
+        "hugging_face_token": "",
         "output_directory": None,  # Will default to Desktop on first run
         "face_smudge_config": {
             "blur_radius": 50,

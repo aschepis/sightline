@@ -3,16 +3,16 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "deface-app"
+name = "sightline"
 version = "1.0.0"
-description = "Cross-platform GUI application for blurring faces in images and videos"
+description = "Privacy-first media tools for face blurring, redaction, and transcription"
 readme = "README.md"
 requires-python = ">=3.8"
 license = {text = "MIT"}
 authors = [
     {name = "Adam Schepis", email = ""}
 ]
-keywords = ["deface", "face-blur", "privacy", "gui", "image-processing", "video-processing"]
+keywords = ["face-blur", "redaction", "transcription", "speech-to-text","privacy", "gui", "image-processing", "video-processing"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: End Users/Desktop",

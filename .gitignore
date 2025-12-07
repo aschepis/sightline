@@ -74,3 +74,6 @@ dmypy.json
 .env.local
 
 coverage.xml
+
+# Logs
+*.log

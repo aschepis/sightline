@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Sightline Brand Guide</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      :root {
+        --bg-main: #020513;
+        --bg-panel: #050b18;
+        --accent: #00a6ff;
+        --accent-soft: rgba(0, 166, 255, 0.6);
+        --accent-start: #11b3ff;
+        --accent-end: #0048a4;
+        --text-main: #f5faff;
+        --text-muted: #8ea4c7;
+        --border-subtle: #1a253a;
+        --danger: #ff3b30;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      html,
+      body {
+        height: 100%;
+      }
+
+      body {
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+          "Inter", "Segoe UI", sans-serif;
+        background: radial-gradient(
+            circle at top,
+            #071a33 0%,
+            var(--bg-main) 55%
+          ),
+          radial-gradient(circle at bottom, #01020a 0%, #000000 55%);
+        color: var(--text-main);
+        padding: 32px 16px 40px;
+        display: flex;
+        justify-content: center;
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
+      }
+
+      .guide {
+        width: 100%;
+        max-width: 1040px;
+        background: radial-gradient(
+          circle at top,
+          #071a33 0%,
+          #020713 45%,
+          #00040c 100%
+        );
+        border-radius: 28px;
+        border: 1px solid rgba(255, 255, 255, 0.04);
+        box-shadow: 0 26px 70px rgba(0, 0, 0, 0.9);
+        padding: 28px 28px 32px;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .guide::before {
+        content: "";
+        position: absolute;
+        left: -30%;
+        right: -30%;
+        top: 120px;
+        height: 1px;
+        background: radial-gradient(
+          circle at center,
+          rgba(0, 166, 255, 0.9),
+          transparent 70%
+        );
+        box-shadow: 0 0 18px rgba(255, 255, 255, 0.7),
+          0 0 40px var(--accent-soft);
+        opacity: 0.8;
+        pointer-events: none;
+      }
+
+      .guide-inner {
+        position: relative;
+        z-index: 1;
+        display: grid;
+        grid-template-columns: minmax(0, 2.1fr) minmax(0, 1.8fr);
+        gap: 28px;
+      }
+
+      header {
+        grid-column: 1 / -1;
+        margin-bottom: 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 18px;
+      }
+
+      .brand-lockup {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .brand-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 14px;
+        background: radial-gradient(
+          circle at center,
+          var(--accent-start) 0%,
+          #0050a0 42%,
+          #000c1f 100%
+        );
+        box-shadow: 0 0 20px rgba(17, 179, 255, 0.9),
+          0 0 48px rgba(0, 102, 204, 0.8);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .brand-icon::after {
+        content: "";
+        position: absolute;
+        left: -30%;
+        right: -30%;
+        top: 50%;
+        height: 1px;
+        background: radial-gradient(
+          circle at center,
+          #e2f7ff 0%,
+          transparent 60%
+        );
+        box-shadow: 0 0 7px rgba(194, 232, 255, 0.95),
+          0 0 16px rgba(0, 166, 255, 0.9);
+      }
+
+      .brand-title {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .brand-name {
+        letter-spacing: 0.3em;
+        text-transform: uppercase;
+        font-size: 0.92rem;
+        font-weight: 500;
+      }
+
+      .brand-tagline {
+        font-size: 0.9rem;
+        color: var(--text-muted);
+        max-width: 360px;
+      }
+
+      .meta-label {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.18em;
+        color: rgba(190, 210, 245, 0.7);
+      }
+
+      h2 {
+        font-size: 1rem;
+        text-transform: uppercase;
+        letter-spacing: 0.2em;
+        margin-bottom: 14px;
+        color: rgba(210, 225, 255, 0.9);
+      }
+
+      p {
+        font-size: 0.9rem;
+        line-height: 1.55;
+        color: var(--text-muted);
+      }
+
+      .panel {
+        background: rgba(3, 9, 22, 0.9);
+        border-radius: 20px;
+        border: 1px solid rgba(255, 255, 255, 0.04);
+        padding: 16px 18px 18px;
+        box-shadow: 0 14px 40px rgba(0, 0, 0, 0.9);
+      }
+
+      .panel + .panel {
+        margin-top: 14px;
+      }
+
+      .swatch-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
+        gap: 12px;
+        margin-top: 6px;
+      }
+
+      .swatch {
+        border-radius: 14px;
+        padding: 10px 10px 12px;
+        border: 1px solid rgba(255, 255, 255, 0.04);
+        background: radial-gradient(
+          circle at top,
+          rgba(255, 255, 255, 0.04),
+          transparent 55%
+        );
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .swatch-chip {
+        height: 40px;
+        border-radius: 11px;
+        margin-bottom: 6px;
+        box-shadow: 0 10px 24px rgba(0, 0, 0, 0.75);
+      }
+
+      .swatch-label {
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.16em;
+        color: rgba(200, 220, 255, 0.82);
+      }
+
+      .swatch-hex {
+        font-size: 0.82rem;
+        color: rgba(210, 225, 255, 0.9);
+      }
+
+      .swatch-notes {
+        font-size: 0.78rem;
+        color: var(--text-muted);
+      }
+
+      .stack {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-top: 8px;
+      }
+
+      .rule {
+        font-size: 0.86rem;
+        color: var(--text-muted);
+        line-height: 1.55;
+      }
+
+      code {
+        font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo,
+          Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        font-size: 0.8rem;
+        background: rgba(4, 11, 26, 0.9);
+        border-radius: 6px;
+        padding: 2px 5px;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        color: #a9d7ff;
+      }
+
+      .horizon-preview {
+        margin-top: 10px;
+        padding: 14px 14px 16px;
+        border-radius: 16px;
+        background: radial-gradient(
+          circle at top,
+          rgba(0, 166, 255, 0.18) 0%,
+          transparent 60%
+        );
+        border: 1px solid rgba(255, 255, 255, 0.04);
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .horizon-line {
+        position: relative;
+        height: 44px;
+        border-radius: 14px;
+        background: radial-gradient(circle at center, #000916 0%, #00040a 60%);
+        overflow: hidden;
+      }
+
+      .horizon-line::before {
+        content: "";
+        position: absolute;
+        left: -30%;
+        right: -30%;
+        top: 50%;
+        height: 1px;
+        background: radial-gradient(
+          circle at center,
+          #e4f6ff 0%,
+          transparent 55%
+        );
+        box-shadow: 0 0 14px rgba(255, 255, 255, 0.9),
+          0 0 30px rgba(0, 166, 255, 0.85);
+      }
+
+      .type-row {
+        display: flex;
+        gap: 18px;
+        align-items: baseline;
+        flex-wrap: wrap;
+      }
+
+      .type-sample {
+        flex: 1 1 140px;
+      }
+
+      .type-label {
+        font-size: 0.76rem;
+        text-transform: uppercase;
+        letter-spacing: 0.16em;
+        color: rgba(190, 210, 245, 0.8);
+        margin-bottom: 2px;
+      }
+
+      .type-main {
+        font-size: 1.48rem;
+        letter-spacing: 0.03em;
+      }
+
+      .type-sub {
+        font-size: 0.96rem;
+        color: var(--text-muted);
+      }
+
+      .chip-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 10px;
+      }
+
+      .chip {
+        font-size: 0.78rem;
+        padding: 4px 10px;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        background: rgba(4, 11, 26, 0.6);
+        color: rgba(205, 220, 255, 0.9);
+      }
+
+      .chip--accent {
+        border-color: rgba(0, 166, 255, 0.8);
+        box-shadow: 0 0 12px rgba(0, 166, 255, 0.4);
+      }
+
+      .button-demo {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 10px;
+        align-items: center;
+      }
+
+      .btn-primary,
+      .btn-secondary {
+        border-radius: 999px;
+        padding: 9px 20px;
+        font-size: 0.82rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        border: none;
+        cursor: default;
+        font-weight: 500;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.95);
+      }
+
+      .btn-primary {
+        background: linear-gradient(
+          180deg,
+          #4dd3ff 0%,
+          #08a4ff 38%,
+          #0071cc 100%
+        );
+        color: #ffffff;
+        box-shadow: 0 0 20px rgba(0, 190, 255, 0.9), 0 8px 24px rgba(0, 0, 0, 1);
+      }
+
+      .btn-secondary {
+        background: rgba(3, 10, 26, 0.9);
+        color: #d0e3ff;
+        border: 1px solid rgba(120, 160, 210, 0.6);
+      }
+
+      .note {
+        font-size: 0.78rem;
+        color: var(--text-muted);
+        margin-top: 4px;
+      }
+
+      @media (max-width: 780px) {
+        .guide-inner {
+          grid-template-columns: minmax(0, 1fr);
+        }
+        header {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+        .brand-tagline {
+          max-width: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="guide">
+      <div class="guide-inner">
+        <header>
+          <div class="brand-lockup">
+            <div class="brand-icon" aria-hidden="true"></div>
+            <div class="brand-title">
+              <div class="brand-name">SIGHTLINE</div>
+              <div class="brand-tagline">
+                Privacy-aware tools for photos &amp; video. Illumination
+                emerging from obscurity.
+              </div>
+            </div>
+          </div>
+          <div class="meta-label">Brand Colors &amp; Rules</div>
+        </header>
+
+        <!-- Left Column -->
+        <section>
+          <div class="panel">
+            <h2>Core Palette</h2>
+            <p>
+              Sightline uses a deep navy base, luminous blues for accents, and
+              soft off-whites for legible text. Use color sparingly; the horizon
+              glow and buttons carry most of the vibrancy.
+            </p>
+            <div class="swatch-grid">
+              <div class="swatch">
+                <div class="swatch-chip" style="background: #00a6ff"></div>
+                <div class="swatch-label">Primary Accent</div>
+                <div class="swatch-hex">#00A6FF</div>
+                <div class="swatch-notes">
+                  Used for key actions, focus, and horizon glow.
+                </div>
+              </div>
+              <div class="swatch">
+                <div class="swatch-chip" style="background: #11b3ff"></div>
+                <div class="swatch-label">Horizon Cyan</div>
+                <div class="swatch-hex">#11B3FF</div>
+                <div class="swatch-notes">
+                  Top of gradients and subtle highlights.
+                </div>
+              </div>
+              <div class="swatch">
+                <div class="swatch-chip" style="background: #0048a4"></div>
+                <div class="swatch-label">Deep Azure</div>
+                <div class="swatch-hex">#0048A4</div>
+                <div class="swatch-notes">
+                  Adds depth to backgrounds and borders.
+                </div>
+              </div>
+              <div class="swatch">
+                <div class="swatch-chip" style="background: #020513"></div>
+                <div class="swatch-label">Abyss Blue</div>
+                <div class="swatch-hex">#020513</div>
+                <div class="swatch-notes">Primary page background.</div>
+              </div>
+              <div class="swatch">
+                <div class="swatch-chip" style="background: #071a33"></div>
+                <div class="swatch-label">Midnight Navy</div>
+                <div class="swatch-hex">#071A33</div>
+                <div class="swatch-notes">Panels and elevated surfaces.</div>
+              </div>
+              <div class="swatch">
+                <div class="swatch-chip" style="background: #f5faff"></div>
+                <div class="swatch-label">Arctic White</div>
+                <div class="swatch-hex">#F5FAFF</div>
+                <div class="swatch-notes">
+                  Headline and primary text on dark.
+                </div>
+              </div>
+              <div class="swatch">
+                <div class="swatch-chip" style="background: #8ea4c7"></div>
+                <div class="swatch-label">Mist Blue</div>
+                <div class="swatch-hex">#8EA4C7</div>
+                <div class="swatch-notes">
+                  Secondary copy, hints, helper text.
+                </div>
+              </div>
+              <div class="swatch">
+                <div class="swatch-chip" style="background: #ff3b30"></div>
+                <div class="swatch-label">Ember Red</div>
+                <div class="swatch-hex">#FF3B30</div>
+                <div class="swatch-notes">
+                  Errors only. Use rarely and intentionally.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <h2>Gradients &amp; Glows</h2>
+            <div class="stack">
+              <div class="rule">
+                <strong>Primary Button Gradient</strong><br />
+                <code
+                  >linear-gradient(180deg, #4DD3FF 0%, #08A4FF 38%, #0071CC
+                  100%)</code
+                >
+              </div>
+              <div class="rule">
+                <strong>Horizon Glow (Lines &amp; Edges)</strong><br />
+                <code
+                  >box-shadow: 0 0 12px rgba(0, 166, 255, 0.8), 0 0 36px rgba(0,
+                  166, 255, 0.4);</code
+                >
+              </div>
+              <div class="rule">
+                <strong>Surface Background</strong><br />
+                <code
+                  >radial-gradient(circle at top, #071A33 0%, #020713 45%,
+                  #00040C 100%)</code
+                >
+              </div>
+            </div>
+
+            <div class="horizon-preview">
+              <div class="meta-label">Horizon motif</div>
+              <div class="horizon-line" aria-hidden="true"></div>
+              <p class="note">
+                Use the horizon line sparingly as a separator or hero motif. It
+                should feel like a single beam of clarity cutting through
+                darkness.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Right Column -->
+        <section>
+          <div class="panel">
+            <h2>Typography</h2>
+            <div class="type-row">
+              <div class="type-sample">
+                <div class="type-label">Primary Typeface</div>
+                <div class="type-main">Sightline Interface</div>
+                <div class="type-sub">
+                  SF Pro / system UI, 400–600 weight, slightly expanded
+                  letter-spacing.
+                </div>
+              </div>
+            </div>
+            <div class="stack">
+              <div class="rule">
+                <strong>Logo &amp; Brand Name</strong><br />
+                Set in all caps with <code>letter-spacing: 0.3em</code>. Use
+                only for the main brand wordmark.
+              </div>
+              <div class="rule">
+                <strong>Headlines</strong><br />
+                1.3–1.7rem, weight 500–600, with 0.02–0.04em letter-spacing.
+                Avoid overly heavy 700+ weights.
+              </div>
+              <div class="rule">
+                <strong>Body Text</strong><br />
+                0.9–1rem, weight 400–500, line-height ~1.55. Color
+                <code>#8EA4C7</code> for muted copy to reduce glare.
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <h2>UI Components</h2>
+            <p>
+              Components should feel minimal and cinematic. Motion is subtle:
+              tiny lifts, soft glows, and horizon accents rather than large
+              color shifts.
+            </p>
+            <div class="button-demo">
+              <button class="btn-primary" type="button">Primary Action</button>
+              <button class="btn-secondary" type="button">Secondary</button>
+            </div>
+            <p class="note">
+              Primary buttons are reserved for the main workflow action (e.g.,
+              “Select image”, “Process frame”). All other actions should be
+              secondary or text links.
+            </p>
+
+            <div class="stack" style="margin-top: 14px">
+              <div class="rule">
+                <strong>Focus &amp; Hover</strong><br />
+                Use a faint glow ring and tiny lift.<br />
+                <code>outline: 2px solid rgba(0,166,255,0.5);</code><br />
+                <code>transform: translateY(-1px);</code>
+              </div>
+              <div class="rule">
+                <strong>Layout Rhythm</strong><br />
+                Prefer centered layouts with generous padding. Avoid dense
+                clusters of UI elements; Sightline should feel calm and
+                deliberate, not busy.
+              </div>
+            </div>
+
+            <div class="panel" style="margin-top: 14px">
+              <div class="meta-label">Brand principles</div>
+              <div class="chip-row">
+                <div class="chip chip--accent">Illumination over noise</div>
+                <div class="chip chip--accent">Privacy-first</div>
+                <div class="chip">Scientific, not corporate</div>
+                <div class="chip">Protective, not restrictive</div>
+              </div>
+              <p class="note">
+                Every screen should reinforce the metaphor of Sightline: tools
+                that reveal clarity while keeping people safe.
+              </p>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </body>
+</html>

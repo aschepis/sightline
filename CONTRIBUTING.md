@@ -1,30 +1,10 @@
-# Contributing to deface-app
+# Contributing to Sightline
 
-Thank you for your interest in contributing to deface-app! This document provides guidelines and instructions for contributing.
+Thank you for your interest in contributing to Sightline! This document provides guidelines and instructions for contributing.
 
 ## Development Setup
 
-1. Fork the repository and clone your fork:
-
-   ```bash
-   git clone https://github.com/your-username/deface-app.git
-   cd deface-app
-   ```
-
-2. Create a virtual environment:
-
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
-
-3. Install development dependencies:
-   ```bash
-   make install-dev
-   # or manually:
-   pip install -r requirements-dev.txt
-   pip install -e .
-   ```
+Follow setup instructions in the README.md file.
 
 ## Development Workflow
 

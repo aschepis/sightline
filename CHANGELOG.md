@@ -8,26 +8,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Comprehensive test suite with pytest
-- Makefile for build automation
-- CI/CD pipeline with GitHub Actions
-- Code quality tools (black, flake8, mypy, isort)
-- Enhanced documentation and README
-- Contributing guidelines
-- Proper project structure with pyproject.toml
-- Improved error handling and logging
+
+- Rebranded application to **Sightline** (formerly Deface) with new icons and theming.
+- Added **Transcription** feature for audio-to-text with speaker diarization.
+- Introduced **Home View** for better navigation between tools.
 
 ### Changed
-- Improved error handling in GUI application
-- Enhanced code structure for better testability
-- Updated build process with automated Makefile targets
 
-## [1.0.0] - 2025-01-XX
+- Refactored UI architecture and extracted views for better maintainability.
+- Redesigned batch processing interface.
+
+## [0.11.0] - 2025-01-XX
 
 ### Added
+
 - Initial release
 - Cross-platform GUI application for face blurring
 - Support for images and videos
 - PyInstaller build configuration
 - Windows installer support
-
