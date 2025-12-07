@@ -9,7 +9,7 @@ import sys
 import os
 import importlib.util
 from pathlib import Path
-from PyInstaller.utils.hooks import copy_metadata, collect_data_files
+from PyInstaller.utils.hooks import copy_metadata, collect_data_files, collect_submodules, get_package_paths
 
 
 app_name = "Sightline"
@@ -39,6 +39,39 @@ lightning_fabric_metadata = copy_metadata("lightning_fabric")
 # This helps ensure transformers is properly bundled
 transformers_datas = collect_data_files("transformers")
 transformers_metadata = copy_metadata("transformers")
+
+# Collect submodules for pyannote and whisperx to ensure all parts are included
+pyannote_hidden = collect_submodules("pyannote")
+whisperx_hidden = collect_submodules("whisperx")
+
+# Collect data for whisperx
+whisperx_datas = collect_data_files("whisperx")
+
+# Collect ALL data for speechbrain (dependency of pyannote.audio)
+# We manually collect source files and exclude it from PYZ to ensure
+# dynamic discovery and inspect.getsource() work correctly.
+speechbrain_datas = []
+speechbrain_metadata = copy_metadata("speechbrain")
+
+try:
+    # get_package_paths returns (base_dir, package_dir)
+    _, sb_pkg_dir = get_package_paths('speechbrain')
+    
+    # Walk the directory and collect ALL files (including .py)
+    for root, dirs, files in os.walk(sb_pkg_dir):
+        for f in files:
+            full_path = os.path.join(root, f)
+            # Calculate relative path to preserve structure in bundle
+            # e.g. site-packages/speechbrain/utils/foo.py -> speechbrain/utils
+            rel_dir = os.path.relpath(root, os.path.dirname(sb_pkg_dir))
+            speechbrain_datas.append((full_path, rel_dir))
+    
+    print(f"✓ Added speechbrain source files to datas ({len(speechbrain_datas)} files)")
+except Exception as e:
+    print(f"✗ Failed to collect speechbrain source files: {e}")
+
+print(f"✓ Speechbrain datas: {len(speechbrain_datas)} files collected")
+print(f"✓ Speechbrain metadata: {speechbrain_metadata}")
 
 # Collect Tcl/Tk library files for tkinter
 tcl_tk_datas = []
@@ -82,7 +115,7 @@ a = Analysis(
     [entry_script, cli_entry_script],
     pathex=[],
     binaries=[],
-    datas=extra_datas + deface_datas + lightning_datas + lightning_metadata + lightning_fabric_datas + lightning_fabric_metadata + transformers_datas + transformers_metadata + icon_files + theme_files + flaticons_files + tcl_tk_datas,
+    datas=extra_datas + deface_datas + lightning_datas + lightning_metadata + lightning_fabric_datas + lightning_fabric_metadata + transformers_datas + transformers_metadata + whisperx_datas + speechbrain_datas + speechbrain_metadata + icon_files + theme_files + flaticons_files + tcl_tk_datas,
     hiddenimports=[
         "deface",
         "skimage._shared.geometry",
@@ -100,13 +133,14 @@ a = Analysis(
         "whisperx.align",
         "whisperx.load",
         "pyannote.audio",
+        "pyannote.audio.models",
         "transformers",
         "transformers.utils.auto_docstring",
-    ],
+    ] + pyannote_hidden + whisperx_hidden,
     hookspath=[],
     hooksconfig={},
-    runtime_hooks=['pyi_rth_tkinter.py'],
-    excludes=[],
+    runtime_hooks=['pyi_rth_tkinter.py', 'pyi_rth_transformers.py', 'pyi_rth_tqdm.py'],
+    excludes=['speechbrain'],
     noarchive=False,
 )
 
@@ -179,3 +213,31 @@ app = BUNDLE(
         "NSHighResolutionCapable": True,
     },
 )
+
+# Create symlink for speechbrain in Frameworks directory
+# speechbrain's find_imports looks in Frameworks/, but PyInstaller puts it in Resources/
+if sys.platform == 'darwin':
+    import subprocess
+    frameworks_path = Path(f"dist/{app_name}.app/Contents/Frameworks")
+    if frameworks_path.exists():
+        symlink_cmd = f"cd {frameworks_path} && ln -sf ../Resources/speechbrain speechbrain"
+        subprocess.run(symlink_cmd, shell=True, check=True)
+        print(f"✓ Created speechbrain symlink in Frameworks directory")
+
+        # Handle whisperx assets
+        whisperx_fw_path = frameworks_path / "whisperx"
+        whisperx_res_path = Path(f"dist/{app_name}.app/Contents/Resources/whisperx")
+        
+        if whisperx_fw_path.exists():
+            # whisperx is in Frameworks, symlink assets folder if it exists in Resources
+            print(f"✓ whisperx found in Frameworks")
+            if (whisperx_res_path / "assets").exists():
+                 symlink_cmd = f"cd {whisperx_fw_path} && ln -sf ../../../Resources/whisperx/assets assets"
+                 subprocess.run(symlink_cmd, shell=True, check=True)
+                 print(f"✓ Created whisperx assets symlink in Frameworks directory")
+        else:
+            # whisperx not in Frameworks, symlink the whole package
+            print(f"ℹ whisperx not in Frameworks, symlinking package")
+            symlink_cmd = f"cd {frameworks_path} && ln -sf ../Resources/whisperx whisperx"
+            subprocess.run(symlink_cmd, shell=True, check=True)
+            print(f"✓ Created whisperx symlink in Frameworks directory")

@@ -5,13 +5,56 @@ allowing users to select input files and output directories for face blurring,
 manual redaction, and audio transcription.
 """
 
+# CRITICAL: Patch transformers BEFORE any imports
+# This fixes PyInstaller compatibility issue with transformers.utils.auto_docstring
+import sys
+import os
+
+if getattr(sys, 'frozen', False):
+    # Running in PyInstaller bundle
+    import importlib
+
+    # Patch 1: transformers.utils.auto_docstring
+    try:
+        auto_docstring_module = importlib.import_module('transformers.utils.auto_docstring')
+        _original_get_model_name = auto_docstring_module.get_model_name
+
+        def _safe_get_model_name(func):
+            """Safely get model name, handling PyInstaller path issues."""
+            try:
+                if hasattr(func, '__code__'):
+                    path = func.__code__.co_filename
+                elif hasattr(func, '__func__'):
+                    path = func.__func__.__code__.co_filename
+                else:
+                    return ""
+
+                parts = path.split(os.path.sep)
+                if len(parts) < 4:
+                    return ""
+
+                return _original_get_model_name(func)
+            except (IndexError, AttributeError, KeyError, ValueError):
+                return ""
+
+        auto_docstring_module.__dict__['get_model_name'] = _safe_get_model_name
+        auto_docstring_module.get_model_name = _safe_get_model_name
+        sys.modules['transformers.utils.auto_docstring'].__dict__['get_model_name'] = _safe_get_model_name
+
+        print("Successfully patched transformers.utils.auto_docstring", file=sys.stderr)
+    except Exception as e:
+        print(f"Warning: Failed to patch transformers: {e}", file=sys.stderr)
+        import traceback
+        traceback.print_exc()
+
+    # Speechbrain is now handled by collect_submodules in the spec file
+    # No patching needed if modules are properly included
+
 import argparse
 import logging
-import os
 import queue
 import shutil
 import subprocess
-import sys
 import threading
 import tkinter as tk
 from pathlib import Path
