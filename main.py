@@ -347,11 +347,14 @@ def run_deface(
 
     logger.info(f"Running deface command: {' '.join(cmd)}")
     try:
+        # On Windows, use CREATE_NO_WINDOW to prevent a console window from appearing
+        creationflags = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
         proc = subprocess.Popen(
             cmd,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
+            creationflags=creationflags,
         )
         return proc
     except FileNotFoundError:

@@ -76,7 +76,7 @@ print(f"✓ Speechbrain metadata: {speechbrain_metadata}")
 # Collect Tcl/Tk library files for tkinter
 tcl_tk_datas = []
 if sys.platform == 'darwin':
-    # Find Tcl/Tk libraries from Python prefix
+    # Find Tcl/Tk libraries from Python prefix (macOS)
     tcl_lib = Path(sys.prefix) / 'lib' / 'tcl8.6'
     tk_lib = Path(sys.prefix) / 'lib' / 'tk8.6'
 
@@ -91,6 +91,47 @@ if sys.platform == 'darwin':
         print(f"✓ Found Tk library at: {tk_lib}")
     else:
         print(f"✗ Tk library not found at: {tk_lib}")
+elif sys.platform == 'win32':
+    # Find Tcl/Tk libraries from Python prefix (Windows/Conda)
+    # Conda on Windows puts Tcl/Tk in Library/lib or tcl subdirectories
+    tcl_candidates = [
+        Path(sys.prefix) / 'Library' / 'lib' / 'tcl8.6',
+        Path(sys.prefix) / 'tcl' / 'tcl8.6',
+        Path(sys.prefix) / 'lib' / 'tcl8.6',
+        Path(sys.base_prefix) / 'Library' / 'lib' / 'tcl8.6',
+        Path(sys.base_prefix) / 'tcl' / 'tcl8.6',
+    ]
+    tk_candidates = [
+        Path(sys.prefix) / 'Library' / 'lib' / 'tk8.6',
+        Path(sys.prefix) / 'tcl' / 'tk8.6',
+        Path(sys.prefix) / 'lib' / 'tk8.6',
+        Path(sys.base_prefix) / 'Library' / 'lib' / 'tk8.6',
+        Path(sys.base_prefix) / 'tcl' / 'tk8.6',
+    ]
+    
+    tcl_lib = None
+    for candidate in tcl_candidates:
+        if candidate.exists() and (candidate / 'init.tcl').exists():
+            tcl_lib = candidate
+            break
+    
+    tk_lib = None
+    for candidate in tk_candidates:
+        if candidate.exists() and (candidate / 'tk.tcl').exists():
+            tk_lib = candidate
+            break
+
+    if tcl_lib:
+        tcl_tk_datas.append((str(tcl_lib), '_tcl_data'))
+        print(f"✓ Found Tcl library at: {tcl_lib}")
+    else:
+        print(f"✗ Tcl library not found in any candidate location")
+
+    if tk_lib:
+        tcl_tk_datas.append((str(tk_lib), '_tk_data'))
+        print(f"✓ Found Tk library at: {tk_lib}")
+    else:
+        print(f"✗ Tk library not found in any candidate location")
 
 # Include both icon files for cross-platform support
 icon_files = [("icon.icns", '.'), ("icon.png", '.')] if sys.platform == "darwin" else [("icon.png", '.'), ("icon.ico", '.')]

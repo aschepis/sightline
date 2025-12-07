@@ -14,7 +14,7 @@ CONDA_RUN := conda run -n $(CONDA_ENV)
 
 ### TARGETS ###################################################################
 
-.PHONY: help conda-env conda-remove install install-dev build build-macos sign \
+.PHONY: help conda-env conda-remove install install-dev build build-windows build-macos sign \
         notarize create-dmg dist-macos dist clean shell test lint format check run \
         check-deps
 
@@ -29,6 +29,7 @@ help:
 	@echo "  make lint            Run linting checks (flake8, black, isort, mypy)"
 	@echo "  make format          Auto-format code with black and isort"
 	@echo "  make check           Run tests and linting (fails on any error)"
+	@echo "  make build-windows   Build Windows executable (dist/Sightline/)"
 	@echo "  make build-macos     Build macOS .app bundle"
 	@echo "  make sign            Sign the .app (use SIGNING_IDENTITY=<id> for real signing)"
 	@echo "  make notarize        Notarize the signed .app (requires APPLE_ID, APPLE_TEAM_ID)"
@@ -139,6 +140,12 @@ check: test lint
 ### BUILDING ##################################################################
 
 build: build-macos
+
+build-windows:
+	$(CONDA_RUN) python -m PyInstaller $(SPEC)
+	@echo "→ Post-processing: Creating Tcl/Tk lib directory symlinks..."
+	$(CONDA_RUN) python -c "import shutil, os; src_tcl='dist/Sightline/_internal/_tcl_data'; src_tk='dist/Sightline/_internal/_tk_data'; dst_lib='dist/Sightline/lib'; os.makedirs(dst_lib, exist_ok=True); dst_tcl=os.path.join(dst_lib,'tcl8.6'); dst_tk=os.path.join(dst_lib,'tk8.6'); shutil.rmtree(dst_tcl, ignore_errors=True); shutil.rmtree(dst_tk, ignore_errors=True); shutil.copytree(src_tcl, dst_tcl) if os.path.isdir(src_tcl) else None; shutil.copytree(src_tk, dst_tk) if os.path.isdir(src_tk) else None; print('  Created lib/tcl8.6 and lib/tk8.6')"
+	@echo "Build complete! Output is in dist/Sightline/"
 
 build-macos:
 	$(CONDA_RUN) python -m PyInstaller $(SPEC)
@@ -262,5 +269,5 @@ dist:
 ### CLEANUP ###################################################################
 
 clean:
-	rm -rf ./build ./dist ./__pycache__ *.egg-info
-	find . -name "__pycache__" -exec rm -rf {} +
+	$(CONDA_RUN) python -c "import shutil, pathlib; shutil.rmtree('build', ignore_errors=True); shutil.rmtree('dist', ignore_errors=True); shutil.rmtree('__pycache__', ignore_errors=True); [shutil.rmtree(str(p), ignore_errors=True) for p in pathlib.Path('.').rglob('__pycache__')]; [shutil.rmtree(str(p), ignore_errors=True) for p in pathlib.Path('.').glob('*.egg-info')]"
+	@echo "Clean complete!"

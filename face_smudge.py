@@ -1570,11 +1570,14 @@ class FaceSmudgeWindow(ctk.CTkToplevel):
                 temp_audio = None  # Will be set if audio extraction is attempted
                 try:
                     # Check if ffmpeg is available
+                    # On Windows, use CREATE_NO_WINDOW to prevent console windows
+                    creationflags = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
                     result = subprocess.run(
                         ["ffmpeg", "-version"],
                         stdout=subprocess.PIPE,
                         stderr=subprocess.PIPE,
                         timeout=5,
+                        creationflags=creationflags,
                     )
                     if result.returncode != 0:
                         raise FileNotFoundError("ffmpeg command failed")
@@ -1597,6 +1600,7 @@ class FaceSmudgeWindow(ctk.CTkToplevel):
                         stdout=subprocess.PIPE,
                         stderr=subprocess.PIPE,
                         timeout=10,
+                        creationflags=creationflags,
                     )
 
                     if result.returncode == 0 and result.stdout.strip():
@@ -1635,6 +1639,7 @@ class FaceSmudgeWindow(ctk.CTkToplevel):
                             stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE,
                             timeout=60,
+                            creationflags=creationflags,
                         )
 
                         if result.returncode != 0:
@@ -1664,6 +1669,7 @@ class FaceSmudgeWindow(ctk.CTkToplevel):
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE,
                                 timeout=300,  # 5 minutes max
+                                creationflags=creationflags,
                             )
 
                             if result.returncode == 0 and os.path.exists(filename):
