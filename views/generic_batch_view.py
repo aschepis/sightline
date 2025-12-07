@@ -88,7 +88,7 @@ class GenericBatchView(BaseView, ABC):
         self.create_widgets()
 
         # Drag and drop will be set up when view is shown
-        self._drop_handler = None
+        self._drop_handler: Optional[Callable[[Any], str]] = None
         self._drag_drop_setup = False
 
         # Start checking for process output

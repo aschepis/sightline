@@ -5,26 +5,29 @@ allowing users to select input files and output directories for face blurring,
 manual redaction, and audio transcription.
 """
 
+import os
+
 # CRITICAL: Patch transformers BEFORE any imports
 # This fixes PyInstaller compatibility issue with transformers.utils.auto_docstring
 import sys
-import os
 
-if getattr(sys, 'frozen', False):
+if getattr(sys, "frozen", False):
     # Running in PyInstaller bundle
     import importlib
 
     # Patch 1: transformers.utils.auto_docstring
     try:
-        auto_docstring_module = importlib.import_module('transformers.utils.auto_docstring')
+        auto_docstring_module = importlib.import_module(
+            "transformers.utils.auto_docstring"
+        )
         _original_get_model_name = auto_docstring_module.get_model_name
 
         def _safe_get_model_name(func):
             """Safely get model name, handling PyInstaller path issues."""
             try:
-                if hasattr(func, '__code__'):
+                if hasattr(func, "__code__"):
                     path = func.__code__.co_filename
-                elif hasattr(func, '__func__'):
+                elif hasattr(func, "__func__"):
                     path = func.__func__.__code__.co_filename
                 else:
                     return ""
@@ -37,14 +40,17 @@ if getattr(sys, 'frozen', False):
             except (IndexError, AttributeError, KeyError, ValueError):
                 return ""
 
-        auto_docstring_module.__dict__['get_model_name'] = _safe_get_model_name
-        auto_docstring_module.get_model_name = _safe_get_model_name
-        sys.modules['transformers.utils.auto_docstring'].__dict__['get_model_name'] = _safe_get_model_name
+        auto_docstring_module.__dict__["get_model_name"] = _safe_get_model_name
+        auto_docstring_module.get_model_name = _safe_get_model_name  # type: ignore[attr-defined]
+        sys.modules["transformers.utils.auto_docstring"].__dict__[
+            "get_model_name"
+        ] = _safe_get_model_name
 
         print("Successfully patched transformers.utils.auto_docstring", file=sys.stderr)
     except Exception as e:
         print(f"Warning: Failed to patch transformers: {e}", file=sys.stderr)
         import traceback
+
         traceback.print_exc()
 
     # Speechbrain is now handled by collect_submodules in the spec file
@@ -52,13 +58,11 @@ if getattr(sys, 'frozen', False):
 
 import argparse
 import logging
-import queue
 import shutil
 import subprocess
-import threading
 import tkinter as tk
 from pathlib import Path
-from tkinter import filedialog, messagebox
+from tkinter import messagebox
 from typing import Any, Dict, List, Optional, Tuple
 
 try:
@@ -75,7 +79,7 @@ except ImportError:
     sys.exit(1)
 
 try:
-    from tkinterdnd2 import DND_FILES, TkinterDnD
+    from tkinterdnd2 import TkinterDnD
 except ImportError:
     print(
         "Error: tkinterdnd2 is not available.\n"
@@ -88,8 +92,6 @@ except ImportError:
     sys.exit(1)
 
 from config_manager import get_default_config, load_config, save_config
-from views.dialogs import ConfigDialog, LogDialog
-from progress_parser import ProgressParser
 from views import FaceBlurView, HomeView, TranscriptionView
 from views.base_view import BaseView
 
@@ -194,7 +196,9 @@ theme_path = get_resource_path("sightline_theme.json")
 if Path(theme_path).exists():
     ctk.set_default_color_theme(theme_path)
 else:
-    logger.warning(f"Sightline theme file not found at {theme_path}, using default theme")
+    logger.warning(
+        f"Sightline theme file not found at {theme_path}, using default theme"
+    )
     ctk.set_default_color_theme("blue")
 
 
@@ -526,7 +530,7 @@ class SightlineApp(ctk.CTk, TkinterDnD.Tk):
         # Show new view
         self.current_view = self.views[view_name]
         self.current_view.show()
-        
+
         # Ensure the view is properly updated and displayed
         self.update_idletasks()
 
@@ -572,7 +576,9 @@ class SightlineApp(ctk.CTk, TkinterDnD.Tk):
             "deface_config": self.config,
             "output_directory": output_dir or self.saved_output_directory,
             "hugging_face_token": self.full_config.get("hugging_face_token", ""),
-            "face_smudge_config": self.full_config.get("face_smudge_config", default_config.get("face_smudge_config", {})),
+            "face_smudge_config": self.full_config.get(
+                "face_smudge_config", default_config.get("face_smudge_config", {})
+            ),
         }
         save_config(config_to_save)
         if output_dir:
@@ -597,7 +603,9 @@ class SightlineApp(ctk.CTk, TkinterDnD.Tk):
             )
         except Exception as e:
             logger.error(f"Error opening Face Smudge window: {e}")
-            messagebox.showerror("Error", f"Could not open Face Smudge window:\n{str(e)}")
+            messagebox.showerror(
+                "Error", f"Could not open Face Smudge window:\n{str(e)}"
+            )
 
     def _on_closing(self):
         """Handle window closing event."""
@@ -685,10 +693,10 @@ def main():
     # Configure root logger
     root_logger.handlers = handlers
     root_logger.setLevel(log_level)
-    
+
     # Ensure all loggers inherit from root logger level
     logger.setLevel(log_level)
-    
+
     logger.info(f"Logging level set to {args.log_level}")
     if args.log_file:
         logger.info(f"Logging to file: {args.log_file}")
@@ -706,6 +714,7 @@ def main():
         messagebox.showerror("Error", f"An unexpected error occurred: {str(e)}")
     finally:
         logger.info("Application closed")
+
 
 if __name__ in ("__main__", "__mp_main__"):
     main()
