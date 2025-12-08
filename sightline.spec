@@ -12,6 +12,109 @@ from pathlib import Path
 from PyInstaller.utils.hooks import copy_metadata, collect_data_files, collect_submodules, get_package_paths
 
 
+def filter_large_files(datas, max_size_mb=10, allow_package_models=True):
+    """Filter out large files that shouldn't be included in the distribution.
+
+    This prevents including cached model files, large data files, etc.
+    that can bloat the installer size. Models are downloaded at runtime,
+    so we don't need to bundle cached model files.
+
+    Args:
+        datas: List of (source, dest) tuples from collect_data_files
+        max_size_mb: Maximum file size in MB to include (default: 10MB)
+        allow_package_models: If True, allow small model files from package data
+                             (like deface's ONNX models). If False, exclude all model files.
+
+    Returns:
+        Filtered list of (source, dest) tuples
+    """
+    max_size_bytes = max_size_mb * 1024 * 1024
+    filtered = []
+    excluded_count = 0
+    excluded_size = 0
+
+    # Patterns to exclude regardless of size (cache directories, etc.)
+    exclude_patterns = [
+        '__pycache__',
+        '.pyc',
+        '.pyo',
+        '.pyd',
+        '.cache',
+        '.git',
+        '__MACOSX',
+        '.DS_Store',
+        'model_cache',
+        'hub_cache',
+        'transformers_cache',
+        'huggingface',  # Hugging Face cache directories
+        '.huggingface',
+    ]
+
+    # File extensions that are typically large model files downloaded at runtime
+    # Note: Small ONNX files from deface package data are allowed if allow_package_models=True
+    large_model_extensions = ['.bin', '.safetensors', '.pt', '.pth', '.ckpt']
+
+    # Always exclude large ONNX files (these are runtime-downloaded models)
+    # Small ONNX files (< 10MB) from package data (like deface) are allowed
+    onnx_max_size = 10 * 1024 * 1024  # 10MB for ONNX files
+
+    for source, dest in datas:
+        source_path = Path(source) if isinstance(source, str) else source
+
+        # Skip if path contains excluded patterns
+        if any(pattern in str(source_path) for pattern in exclude_patterns):
+            excluded_count += 1
+            continue
+
+        # Handle model files specially
+        file_ext = source_path.suffix.lower()
+
+        # Always exclude large model file types (these are runtime-downloaded)
+        if file_ext in large_model_extensions:
+            try:
+                if source_path.is_file():
+                    size = source_path.stat().st_size
+                    if size > max_size_bytes:
+                        excluded_count += 1
+                        excluded_size += size
+                        continue
+            except (OSError, AttributeError):
+                pass
+
+        # For ONNX files: exclude if large (runtime models) but allow small ones (package data)
+        if file_ext == '.onnx':
+            try:
+                if source_path.is_file():
+                    size = source_path.stat().st_size
+                    # Exclude large ONNX files (these are runtime-downloaded models)
+                    if size > onnx_max_size:
+                        excluded_count += 1
+                        excluded_size += size
+                        continue
+            except (OSError, AttributeError):
+                pass
+
+        # Skip any files larger than max_size_mb
+        try:
+            if source_path.is_file():
+                size = source_path.stat().st_size
+                if size > max_size_bytes:
+                    excluded_count += 1
+                    excluded_size += size
+                    continue
+        except (OSError, AttributeError):
+            # If we can't check size, include it to be safe
+            pass
+
+        filtered.append((source, dest))
+
+    if excluded_count > 0:
+        excluded_mb = excluded_size / (1024 * 1024)
+        print(f"✓ Filtered out {excluded_count} large files ({excluded_mb:.1f} MB)")
+
+    return filtered
+
+
 app_name = "Sightline"
 bundle_id = "com.sightlineapp.sightline"
 entry_script = "main.py"
@@ -24,8 +127,9 @@ block_cipher = None
 # Ensure package metadata and data files are available at runtime.
 # - imageio: needs distribution metadata for importlib.metadata.
 # - deface: ships ONNX models (e.g. centerface.onnx) as package data.
+#   These are small and needed, so we don't filter them.
 extra_datas = copy_metadata("imageio")
-deface_datas = collect_data_files("deface")
+deface_datas = collect_data_files("deface")  # Small ONNX models, keep all
 
 # Collect data for lightning and lightning_fabric to resolve missing version.info issues
 # These are dependencies of whisperx/pyannote.audio
@@ -37,7 +141,9 @@ lightning_fabric_metadata = copy_metadata("lightning_fabric")
 
 # Collect data for transformers (dependency of whisperx)
 # This helps ensure transformers is properly bundled
-transformers_datas = collect_data_files("transformers")
+# Filter out large model cache files
+transformers_datas_raw = collect_data_files("transformers")
+transformers_datas = filter_large_files(transformers_datas_raw, max_size_mb=10)
 transformers_metadata = copy_metadata("transformers")
 
 # Collect submodules for pyannote and whisperx to ensure all parts are included
@@ -45,7 +151,9 @@ pyannote_hidden = collect_submodules("pyannote")
 whisperx_hidden = collect_submodules("whisperx")
 
 # Collect data for whisperx
-whisperx_datas = collect_data_files("whisperx")
+# Filter out large model files (whisperx models should be downloaded at runtime)
+whisperx_datas_raw = collect_data_files("whisperx")
+whisperx_datas = filter_large_files(whisperx_datas_raw, max_size_mb=10)
 
 # Collect ALL data for speechbrain (dependency of pyannote.audio)
 # We manually collect source files and exclude it from PYZ to ensure
@@ -56,16 +164,22 @@ speechbrain_metadata = copy_metadata("speechbrain")
 try:
     # get_package_paths returns (base_dir, package_dir)
     _, sb_pkg_dir = get_package_paths('speechbrain')
-    
+
     # Walk the directory and collect ALL files (including .py)
+    # But exclude large model files and cache directories
     for root, dirs, files in os.walk(sb_pkg_dir):
+        # Skip cache directories
+        dirs[:] = [d for d in dirs if d not in ['__pycache__', '.cache', 'cache', 'model_cache']]
+
         for f in files:
             full_path = os.path.join(root, f)
             # Calculate relative path to preserve structure in bundle
             # e.g. site-packages/speechbrain/utils/foo.py -> speechbrain/utils
             rel_dir = os.path.relpath(root, os.path.dirname(sb_pkg_dir))
             speechbrain_datas.append((full_path, rel_dir))
-    
+
+    # Filter out large files from speechbrain
+    speechbrain_datas = filter_large_files(speechbrain_datas, max_size_mb=10)
     print(f"✓ Added speechbrain source files to datas ({len(speechbrain_datas)} files)")
 except Exception as e:
     print(f"✗ Failed to collect speechbrain source files: {e}")
@@ -108,13 +222,13 @@ elif sys.platform == 'win32':
         Path(sys.base_prefix) / 'Library' / 'lib' / 'tk8.6',
         Path(sys.base_prefix) / 'tcl' / 'tk8.6',
     ]
-    
+
     tcl_lib = None
     for candidate in tcl_candidates:
         if candidate.exists() and (candidate / 'init.tcl').exists():
             tcl_lib = candidate
             break
-    
+
     tk_lib = None
     for candidate in tk_candidates:
         if candidate.exists() and (candidate / 'tk.tcl').exists():
@@ -268,7 +382,7 @@ if sys.platform == 'darwin':
         # Handle whisperx assets
         whisperx_fw_path = frameworks_path / "whisperx"
         whisperx_res_path = Path(f"dist/{app_name}.app/Contents/Resources/whisperx")
-        
+
         if whisperx_fw_path.exists():
             # whisperx is in Frameworks, symlink assets folder if it exists in Resources
             print(f"✓ whisperx found in Frameworks")
