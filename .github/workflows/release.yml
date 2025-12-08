@@ -256,17 +256,22 @@ jobs:
         run: |
           conda run -n sightline-build python -m PyInstaller sightline.spec --clean --noconfirm
 
-      - name: Remove large model files
+      - name: Remove large files and CUDA libraries
         shell: bash -el {0}
         run: |
           echo "=== Before cleanup ==="
           du -sh dist/Sightline
           echo ""
-          echo "Finding large files (>10MB)..."
-          find dist/Sightline -type f -size +10M -exec ls -lh {} \; | head -20
-          echo ""
-          echo "Removing large model files from dist/Sightline..."
-          # Remove large model files
+          echo "Removing CUDA libraries and large files..."
+          # Remove CUDA-specific PyTorch libraries (app will use CPU-only)
+          find dist/Sightline -type f -name "*cuda*.so" -delete
+          find dist/Sightline -type f -name "*cuda*.a" -delete
+          # Remove triton (CUDA compiler, very large)
+          rm -rf dist/Sightline/_internal/triton 2>/dev/null || true
+          # Remove CUDA binaries and tools
+          find dist/Sightline -path "*/triton/*" -delete 2>/dev/null || true
+          find dist/Sightline -path "*/nvidia/*" -delete 2>/dev/null || true
+          # Remove large model files (runtime-downloaded, not needed in bundle)
           find dist/Sightline -type f \( \
             -name "*.bin" -o \
             -name "*.safetensors" -o \
@@ -274,7 +279,7 @@ jobs:
             -name "*.pth" -o \
             -name "*.ckpt" \
           \) -size +10M -delete
-          # Also remove large ONNX files (keep small ones like deface's centerface.onnx)
+          # Remove large ONNX files (keep small ones like deface's centerface.onnx)
           find dist/Sightline -type f -name "*.onnx" -size +10M -delete
           # Remove cache directories
           find dist/Sightline -type d \( \
@@ -290,8 +295,8 @@ jobs:
           echo "=== After cleanup ==="
           du -sh dist/Sightline
           echo ""
-          echo "Remaining large files (>10MB)..."
-          find dist/Sightline -type f -size +10M -exec ls -lh {} \; | head -20 || echo "No large files found"
+          echo "Top 20 largest remaining files..."
+          find dist/Sightline -type f -exec ls -lh {} \; | sort -k5 -hr | head -20
 
       - name: Create tarball
         env:
