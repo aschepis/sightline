@@ -181,7 +181,7 @@ jobs:
       - name: Build Windows executable
         shell: bash -el {0}
         run: |
-          conda run -n sightline-build python -m PyInstaller deface.spec --clean --noconfirm
+          conda run -n sightline-build python -m PyInstaller sightline.spec --clean --noconfirm
 
       - name: Install Inno Setup
         run: |
@@ -254,7 +254,7 @@ jobs:
       - name: Build Linux executable
         shell: bash -el {0}
         run: |
-          conda run -n sightline-build python -m PyInstaller deface.spec --clean --noconfirm
+          conda run -n sightline-build python -m PyInstaller sightline.spec --clean --noconfirm
 
       - name: Create tarball
         env:
