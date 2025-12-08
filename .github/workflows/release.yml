@@ -256,6 +256,43 @@ jobs:
         run: |
           conda run -n sightline-build python -m PyInstaller sightline.spec --clean --noconfirm
 
+      - name: Remove large model files
+        shell: bash -el {0}
+        run: |
+          echo "=== Before cleanup ==="
+          du -sh dist/Sightline
+          echo ""
+          echo "Finding large files (>10MB)..."
+          find dist/Sightline -type f -size +10M -exec ls -lh {} \; | head -20
+          echo ""
+          echo "Removing large model files from dist/Sightline..."
+          # Remove large model files
+          find dist/Sightline -type f \( \
+            -name "*.bin" -o \
+            -name "*.safetensors" -o \
+            -name "*.pt" -o \
+            -name "*.pth" -o \
+            -name "*.ckpt" \
+          \) -size +10M -delete
+          # Also remove large ONNX files (keep small ones like deface's centerface.onnx)
+          find dist/Sightline -type f -name "*.onnx" -size +10M -delete
+          # Remove cache directories
+          find dist/Sightline -type d \( \
+            -name "__pycache__" -o \
+            -name ".cache" -o \
+            -name "cache" -o \
+            -name "model_cache" -o \
+            -name "hub_cache" -o \
+            -name "transformers_cache" -o \
+            -name ".huggingface" \
+          \) -exec rm -rf {} + 2>/dev/null || true
+          echo ""
+          echo "=== After cleanup ==="
+          du -sh dist/Sightline
+          echo ""
+          echo "Remaining large files (>10MB)..."
+          find dist/Sightline -type f -size +10M -exec ls -lh {} \; | head -20 || echo "No large files found"
+
       - name: Create tarball
         env:
           VERSION: ${{ steps.version.outputs.VERSION }}

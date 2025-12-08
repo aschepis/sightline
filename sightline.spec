@@ -116,7 +116,7 @@ def filter_large_files(datas, max_size_mb=10, allow_package_models=True):
 
 
 app_name = "Sightline"
-bundle_id = "com.sightlineapp.sightline"
+bundle_id = "com.adamschepis.sightline"
 entry_script = "main.py"
 cli_entry_script = "deface_cli_entry.py"
 # Use .icns for macOS, .ico for Windows, .png for Linux
