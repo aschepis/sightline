@@ -263,7 +263,7 @@ jobs:
           du -sh dist/Sightline
           echo ""
           echo "Finding large files..."
-          find dist/Sightline -type f -size +50M -exec ls -lh {} \; | head -10
+          find dist/Sightline -type f -size +50M -exec ls -lh {} \; 2>/dev/null | head -10 || true
           echo ""
           echo "Removing unnecessary CUDA components and large files..."
           # Remove triton (CUDA compiler, ~337MB+ and not needed at runtime)
@@ -313,7 +313,7 @@ jobs:
           du -sh dist/Sightline
           echo ""
           echo "Top 10 largest remaining files..."
-          find dist/Sightline -type f -exec ls -lh {} \; 2>/dev/null | sort -k5 -hr | head -10
+          find dist/Sightline -type f -exec ls -lh {} \; 2>/dev/null | sort -k5 -hr | head -10 || true
 
       - name: Create tarball
         env:
