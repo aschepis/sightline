@@ -203,6 +203,16 @@ jobs:
 
   build-linux:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch: [x86_64, aarch64]
+        include:
+          - arch: x86_64
+            arch_name: x86_64
+            qemu_platform: ""
+          - arch: aarch64
+            arch_name: aarch64
+            qemu_platform: linux/arm64/v8
 
     steps:
       - name: Free Disk Space (Ubuntu)
@@ -218,6 +228,12 @@ jobs:
 
       - uses: actions/checkout@v4
 
+      - name: Set up QEMU (for ARM builds)
+        if: matrix.arch == 'aarch64'
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: ${{ matrix.qemu_platform }}
+
       - name: Set version
         id: version
         run: |
@@ -227,25 +243,66 @@ jobs:
             echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
           fi
 
-      - name: Set up Miniconda
+      - name: Set up Miniconda (x86_64)
+        if: matrix.arch == 'x86_64'
         uses: conda-incubator/setup-miniconda@v3
         with:
           auto-update-conda: true
           python-version: 3.12
           miniforge-version: latest
           activate-environment: sightline-build
+          environment-file: null
+
+      - name: Set up Miniconda (ARM64)
+        if: matrix.arch == 'aarch64'
+        run: |
+          # Install QEMU for ARM64 emulation
+          sudo apt-get update
+          sudo apt-get install -y qemu-user-static binfmt-support
+
+          # Download and install Miniconda for ARM64 Linux
+          wget https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-aarch64.sh -O miniconda.sh
+          chmod +x miniconda.sh
+          bash miniconda.sh -b -p $HOME/miniconda-arm64
+          rm miniconda.sh
+
+          # Initialize conda
+          source $HOME/miniconda-arm64/bin/activate
+          conda init bash
+
+          # Create the build environment
+          conda create -n sightline-build python=3.12 -y
+
+          echo "CONDA_PREFIX=$HOME/miniconda-arm64" >> $GITHUB_ENV
+          echo "$HOME/miniconda-arm64/bin" >> $GITHUB_PATH
 
       - name: Install dependencies
         shell: bash -el {0}
         run: |
-          conda run -n sightline-build pip install --upgrade pip
-          conda run -n sightline-build pip install -r requirements.txt
-          conda run -n sightline-build pip install pyinstaller
+          if [ "${{ matrix.arch }}" = "aarch64" ]; then
+            source $HOME/miniconda-arm64/bin/activate
+            conda activate sightline-build
+            pip install --upgrade pip
+            pip install -r requirements.txt
+            pip install pyinstaller
+          else
+            conda run -n sightline-build pip install --upgrade pip
+            conda run -n sightline-build pip install -r requirements.txt
+            conda run -n sightline-build pip install pyinstaller
+          fi
 
       - name: Build Linux executable
         shell: bash -el {0}
+        env:
+          ARCH: ${{ matrix.arch }}
         run: |
-          conda run -n sightline-build python -m PyInstaller sightline.spec --clean --noconfirm
+          if [ "${{ matrix.arch }}" = "aarch64" ]; then
+            source $HOME/miniconda-arm64/bin/activate
+            conda activate sightline-build
+            python -m PyInstaller sightline.spec --clean --noconfirm
+          else
+            conda run -n sightline-build python -m PyInstaller sightline.spec --clean --noconfirm
+          fi
 
       - name: Remove large files and unnecessary CUDA components
         shell: bash -el {0}
@@ -309,16 +366,17 @@ jobs:
       - name: Create tarball
         env:
           VERSION: ${{ steps.version.outputs.VERSION }}
+          ARCH_NAME: ${{ matrix.arch_name }}
         run: |
           mkdir -p dist-packages
           cd dist
-          tar -czf "../dist-packages/Sightline-${VERSION}-Linux-x86_64.tar.gz" Sightline/
+          tar -czf "../dist-packages/Sightline-${VERSION}-Linux-${ARCH_NAME}.tar.gz" Sightline/
 
       - name: Upload Linux artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Sightline-Linux
-          path: dist-packages/Sightline-*-Linux-x86_64.tar.gz
+          name: Sightline-Linux-${{ matrix.arch_name }}
+          path: dist-packages/Sightline-*-Linux-${{ matrix.arch_name }}.tar.gz
           retention-days: 5
 
   create-release:
@@ -361,6 +419,7 @@ jobs:
           files: |
             artifacts/Sightline-macOS/*.dmg
             artifacts/Sightline-Windows/*.exe
-            artifacts/Sightline-Linux/*.tar.gz
+            artifacts/Sightline-Linux-x86_64/*.tar.gz
+            artifacts/Sightline-Linux-aarch64/*.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
