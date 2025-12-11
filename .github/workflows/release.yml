@@ -256,15 +256,18 @@ jobs:
       - name: Set up Miniconda (ARM64)
         if: matrix.arch == 'aarch64'
         run: |
-          # Install QEMU for ARM64 emulation
-          sudo apt-get update
-          sudo apt-get install -y qemu-user-static binfmt-support
-
-          # Download and install Miniconda for ARM64 Linux
-          wget https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-aarch64.sh -O miniconda.sh
-          chmod +x miniconda.sh
-          bash miniconda.sh -b -p $HOME/miniconda-arm64
-          rm miniconda.sh
+          # Use Docker to install Miniconda in an ARM64 container to avoid binfmt issues
+          # The Miniconda installer contains ARM64 binaries that need proper execution environment
+          docker run --rm --platform linux/arm64/v8 \
+            -v $HOME:/host-home \
+            ubuntu:22.04 \
+            bash -c "
+              apt-get update -qq && \
+              apt-get install -y -qq wget bzip2 && \
+              wget -q https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-aarch64.sh -O /tmp/miniconda.sh && \
+              bash /tmp/miniconda.sh -b -p /host-home/miniconda-arm64 && \
+              rm /tmp/miniconda.sh
+            "
 
           # Initialize conda
           source $HOME/miniconda-arm64/bin/activate
