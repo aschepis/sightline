@@ -79,40 +79,7 @@ run:
 ### DEPENDENCY CHECKING #######################################################
 
 check-deps:
-	@echo "→ Checking for dependency conflicts..."
-	@echo ""
-	@echo "Step 1: Installing/upgrading pipdeptree..."
-	$(CONDA_RUN) pip install --quiet --upgrade pipdeptree || true
-	@echo ""
-	@echo "Step 2: Running pip check (finds broken dependencies)..."
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@if $(CONDA_RUN) pip check 2>&1 | grep -qE "(has requirement|but you have)"; then \
-		echo "⚠ CONFLICTS DETECTED:"; \
-		$(CONDA_RUN) pip check; \
-		echo ""; \
-		echo "The above packages have dependency conflicts!"; \
-	else \
-		$(CONDA_RUN) pip check 2>&1 || true; \
-		echo "✓ No broken dependencies found by pip check"; \
-	fi
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo ""
-	@echo "Step 3: Dependency tree (inspect for duplicate/conflicting versions)..."
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	$(CONDA_RUN) pipdeptree
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo ""
-	@echo "Step 4: Reverse dependency tree (what depends on each package)..."
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	$(CONDA_RUN) pipdeptree --reverse
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo ""
-	@echo "✓ Dependency check complete!"
-	@echo ""
-	@echo "Tips for identifying conflicts:"
-	@echo "  • Look for packages listed multiple times with different versions"
-	@echo "  • Check pip check output above for explicit conflict warnings"
-	@echo "  • Review the reverse tree to see what depends on conflicting packages"
+	@scripts/check-deps.sh $(CONDA_ENV)
 
 ### CODE QUALITY ###############################################################
 
@@ -172,61 +139,7 @@ build-macos:
 ### SIGNING ###################################################################
 
 sign:
-	@echo "→ Signing $(DIST_APP) with identity: $(SIGNING_IDENTITY)"
-	@if [ "$(SIGNING_IDENTITY)" = "-" ]; then \
-		echo "Using ad-hoc signing (for local testing only)"; \
-		codesign --force --deep --sign "$(SIGNING_IDENTITY)" $(DIST_APP); \
-	else \
-		echo "Using proper signing with hardened runtime"; \
-		echo "→ Step 1: Signing nested frameworks and libraries..."; \
-		find $(DIST_APP)/Contents/Frameworks -type f \( -name "*.dylib" -o -name "*.so" \) 2>/dev/null | while read lib; do \
-			echo "  Signing: $$lib"; \
-			codesign --force --sign "$(SIGNING_IDENTITY)" \
-				--timestamp \
-				--options runtime \
-				"$$lib" 2>/dev/null || true; \
-		done; \
-		echo "→ Step 2: Signing executable helpers inside Frameworks (e.g. ffmpeg)..."; \
-		find $(DIST_APP)/Contents/Frameworks -type f -perm +111 ! \( -name "*.dylib" -o -name "*.so" \) 2>/dev/null | while read binary; do \
-			echo "  Signing: $$binary"; \
-			codesign --force --sign "$(SIGNING_IDENTITY)" \
-				--timestamp \
-				--options runtime \
-				"$$binary" 2>/dev/null || true; \
-		done; \
-		echo "→ Step 3: Signing nested executables..."; \
-		find $(DIST_APP)/Contents/MacOS -type f -perm +111 ! -name "$(APP)" 2>/dev/null | while read binary; do \
-			echo "  Signing: $$binary"; \
-			codesign --force --sign "$(SIGNING_IDENTITY)" \
-				--timestamp \
-				--options runtime \
-				"$$binary" 2>/dev/null || true; \
-		done; \
-		find $(DIST_APP)/Contents/Resources -type f -perm +111 2>/dev/null | while read binary; do \
-			echo "  Signing: $$binary"; \
-			codesign --force --sign "$(SIGNING_IDENTITY)" \
-				--timestamp \
-				--options runtime \
-				"$$binary" 2>/dev/null || true; \
-		done; \
-		echo "→ Step 4: Signing main executable..."; \
-		if [ -f $(DIST_APP)/Contents/MacOS/$(APP) ]; then \
-			codesign --force --sign "$(SIGNING_IDENTITY)" \
-				--timestamp \
-				--options runtime \
-				--entitlements entitlements.plist \
-				$(DIST_APP)/Contents/MacOS/$(APP); \
-		fi; \
-		echo "→ Step 5: Signing app bundle..."; \
-		codesign --force --sign "$(SIGNING_IDENTITY)" \
-			--timestamp \
-			--options runtime \
-			--entitlements entitlements.plist \
-			$(DIST_APP); \
-	fi
-	@echo "→ Verifying signature..."
-	@codesign --verify --verbose=2 $(DIST_APP) && echo "✓ Signature verified!" || echo "⚠ Signature verification failed!"
-	@echo "✓ Signing complete!"
+	@scripts/sign-app.sh $(DIST_APP) $(SIGNING_IDENTITY) $(APP)
 
 notarize:
 	@echo "→ Notarizing $(DIST_APP)..."
