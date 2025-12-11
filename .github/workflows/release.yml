@@ -269,12 +269,11 @@ jobs:
               rm /tmp/miniconda.sh
             "
 
-          # Initialize conda
-          source $HOME/miniconda-arm64/bin/activate
-          conda init bash
+          # Add conda to PATH for this step
+          export PATH="$HOME/miniconda-arm64/bin:$PATH"
 
-          # Create the build environment
-          conda create -n sightline-build python=3.12 -y
+          # Create the build environment (conda init not needed, we use conda directly)
+          $HOME/miniconda-arm64/bin/conda create -n sightline-build python=3.12 -y
 
           echo "CONDA_PREFIX=$HOME/miniconda-arm64" >> $GITHUB_ENV
           echo "$HOME/miniconda-arm64/bin" >> $GITHUB_PATH
