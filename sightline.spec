@@ -295,7 +295,7 @@ a = Analysis(
     hookspath=[],
     hooksconfig={},
     runtime_hooks=['pyi_rth_tkinter.py', 'pyi_rth_transformers.py', 'pyi_rth_tqdm.py'],
-    excludes=['speechbrain', 'matplotlib'],
+    excludes=['speechbrain'],
     noarchive=False,
 )
 
