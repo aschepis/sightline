@@ -72,6 +72,8 @@ VersionInfoProductVersion={#MyAppVersionInfoVersion}
 
 [Files]
 Source: "dist\Sightline\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+; Explicitly include _internal folder to ensure Tcl/Tk libraries (including init.tcl) are included
+Source: "dist\Sightline\_internal\*"; DestDir: "{app}\_internal"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{group}\Sightline"; Filename: "{app}\Sightline.exe"

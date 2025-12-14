@@ -9,7 +9,6 @@ from typing import Any, Optional
 import os
 from pathlib import Path
 from huggingface_hub import snapshot_download, login
-from config_manager import get_models_path
 import customtkinter as ctk
 
 logger = logging.getLogger(__name__)
@@ -172,7 +171,11 @@ class ManageModelsDialog(ctk.CTkToplevel):
 
     def _check_status(self):
         """Check model and token status."""
-        token = self.token_entry.get().strip()
+        # Get token from config (not from UI entry field)
+        token = ""
+        if hasattr(self.app, 'full_config'):
+            token = self.app.full_config.get("hugging_face_token", "")
+
         if not token:
             self.status_label.configure(
                 text="Token missing. Please add token to download models.",
@@ -182,6 +185,7 @@ class ManageModelsDialog(ctk.CTkToplevel):
             return
 
         # Check if models exist on disk
+        from config_manager import get_models_path
         models_path = get_models_path()
         models_exist = self._check_models_exist(models_path)
 
@@ -220,7 +224,7 @@ class ManageModelsDialog(ctk.CTkToplevel):
         """Start downloading models in a background thread."""
         token = self.token_entry.get().strip()
         if not token:
-            messagebox.showerror("Error", "Please enter a Hugging Face token first.")
+            messagebox.showerror("Error", "Please enter and save a Hugging Face token first.")
             return
 
         self.download_btn.configure(state="disabled")
@@ -246,6 +250,7 @@ class ManageModelsDialog(ctk.CTkToplevel):
             # Login with token
             login(token=token)
 
+            from config_manager import get_models_path
             models_path = get_models_path()
             total_models = len(REQUIRED_MODELS)
 

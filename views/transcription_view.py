@@ -195,6 +195,7 @@ class TranscriptionView(GenericBatchView):
             file_info["progress"] = 0.1
             self.output_queue.put(("file_update", file_path))
             logger.info("Loading WhisperX model...")
+            logger.info("NOTE: This may take several minutes the first time as the model needs to be downloaded from Hugging Face (several GB). Please be patient...")
 
             # Load WhisperX model
             import torch
@@ -208,8 +209,49 @@ class TranscriptionView(GenericBatchView):
 
             device = "cuda" if torch.cuda.is_available() else "cpu"
             compute_type = "float16" if device == "cuda" else "float32"
+            logger.info(f"Using device: {device}, compute_type: {compute_type}")
 
-            model = whisperx.load_model("base", device, compute_type=compute_type)
+            # Log Hugging Face cache location for debugging
+            hf_cache = os.environ.get("HF_HOME") or os.path.expanduser("~/.cache/huggingface")
+            logger.info(f"Hugging Face cache location: {hf_cache}")
+
+            # Check if cache directory exists and log some info
+            if os.path.exists(hf_cache):
+                cache_size = sum(f.stat().st_size for f in Path(hf_cache).rglob('*') if f.is_file())
+                cache_size_mb = cache_size / (1024 * 1024)
+                logger.info(f"Cache directory exists, approximate size: {cache_size_mb:.1f} MB")
+            else:
+                logger.info("Cache directory does not exist - model will be downloaded on first use")
+
+            # Check hub directory before download to monitor progress
+            hub_dir = Path(hf_cache) / "hub"
+            if hub_dir.exists():
+                initial_size = sum(f.stat().st_size for f in hub_dir.rglob('*') if f.is_file())
+                logger.info(f"Initial hub cache size: {initial_size / (1024*1024):.2f} MB")
+            else:
+                logger.info("Hub cache directory does not exist yet - will be created during download")
+
+            logger.info("Starting WhisperX model load (this may take 1-5 minutes on CPU, especially first time)...")
+            logger.info("If download appears to hang, check network connectivity and ensure Hugging Face is accessible")
+            logger.info(f"Monitor download progress by checking: {hub_dir}")
+
+            start_time = time.time()
+            try:
+                # Try passing token as parameter (some WhisperX versions support this)
+                try:
+                    model = whisperx.load_model("base", device, compute_type=compute_type, use_auth_token=token)
+                    logger.info("Model loaded with explicit token parameter")
+                except TypeError:
+                    # If use_auth_token parameter not supported, fall back to default
+                    model = whisperx.load_model("base", device, compute_type=compute_type)
+                    logger.info("Model loaded without explicit token parameter")
+
+                elapsed_time = time.time() - start_time
+                logger.info(f"WhisperX model loaded successfully in {elapsed_time:.2f} seconds ({elapsed_time/60:.2f} minutes)")
+            except Exception as e:
+                elapsed_time = time.time() - start_time
+                logger.error(f"Error loading WhisperX model after {elapsed_time:.2f} seconds: {e}", exc_info=True)
+                raise
 
             # Update progress: Loading audio (20%)
             file_info["progress"] = 0.2

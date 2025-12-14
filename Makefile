@@ -132,6 +132,15 @@ build-macos:
 		mv $(DIST_APP)/Contents/Resources/tk $(DIST_APP)/Contents/lib/tk8.6; \
 		echo "  ✓ Moved Tk library to Contents/lib/tk8.6"; \
 	fi
+	@echo "→ Post-processing: Removing invalid symlinks..."
+	@if [ -L "$(DIST_APP)/Contents/Frameworks/tk" ]; then \
+		rm -f $(DIST_APP)/Contents/Frameworks/tk; \
+		echo "  ✓ Removed invalid tk symlink from Frameworks"; \
+	fi
+	@if [ -L "$(DIST_APP)/Contents/Frameworks/tcl" ]; then \
+		rm -f $(DIST_APP)/Contents/Frameworks/tcl; \
+		echo "  ✓ Removed invalid tcl symlink from Frameworks"; \
+	fi
 	@echo "✓ Post-processing complete!"
 
 ### SIGNING ###################################################################

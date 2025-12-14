@@ -7,9 +7,17 @@ manual redaction, and audio transcription.
 
 import os
 
-# CRITICAL: Patch transformers BEFORE any imports
-# This fixes PyInstaller compatibility issue with transformers.utils.auto_docstring
+# CRITICAL: Patch tqdm and transformers BEFORE any imports
+# These fixes address compatibility issues with PyInstaller and frozen applications
 import sys
+
+# Import tqdm runtime hook early to patch disabled_tqdm issue
+# This must happen before any tqdm-related imports (e.g., from huggingface_hub)
+try:
+    import pyi_rth_tqdm  # noqa: F401
+except ImportError:
+    # If the hook file doesn't exist, that's okay - it might not be needed
+    pass
 
 if getattr(sys, "frozen", False):
     # Running in PyInstaller bundle
@@ -366,6 +374,48 @@ def run_deface(
         raise
 
 
+def get_default_log_path() -> Optional[Path]:
+    """Get the default log file path for the current platform.
+
+    Uses platform-appropriate storage when running as a bundled app:
+    - macOS: ~/Library/Logs/sightline/sightline.log
+    - Windows: %APPDATA%/sightline/logs/sightline.log
+    - Linux: ~/.config/sightline/logs/sightline.log
+
+    Returns None if not running as a bundled app or if path cannot be determined.
+
+    Returns:
+        Path to the default log file, or None.
+    """
+    # Only use default log path when running as a bundled app
+    if not getattr(sys, "frozen", False):
+        return None
+
+    home = Path.home()
+
+    # Try platform-specific paths
+    if sys.platform == "darwin":  # macOS
+        log_dir = home / "Library" / "Logs" / "sightline"
+        log_file = log_dir / "sightline.log"
+    elif sys.platform == "win32":  # Windows
+        appdata = os.environ.get("APPDATA")
+        if appdata:
+            log_dir = Path(appdata) / "sightline" / "logs"
+            log_file = log_dir / "sightline.log"
+        else:
+            return None
+    else:  # Linux and other Unix-like systems
+        log_dir = home / ".config" / "sightline" / "logs"
+        log_file = log_dir / "sightline.log"
+
+    # Create directory if it doesn't exist
+    try:
+        log_dir.mkdir(parents=True, exist_ok=True)
+        return log_file
+    except (OSError, PermissionError):
+        return None
+
+
 def get_desktop_path() -> str:
     """Get the user's Desktop folder path.
 
@@ -669,11 +719,19 @@ def main():
     # Configure handlers
     handlers: list[logging.Handler] = [logging.StreamHandler(sys.stderr)]
 
+    # Determine log file path
+    log_file_path = args.log_file
+    if not log_file_path:
+        # If no log file specified, use default for bundled apps
+        default_log_path = get_default_log_path()
+        if default_log_path:
+            log_file_path = str(default_log_path)
+
     # Add file handler if log file is specified
-    if args.log_file:
+    if log_file_path:
         try:
             file_handler = logging.FileHandler(
-                args.log_file, mode="a", encoding="utf-8"
+                log_file_path, mode="a", encoding="utf-8"
             )
             file_handler.setFormatter(
                 logging.Formatter(
@@ -683,7 +741,7 @@ def main():
             handlers.append(file_handler)
         except Exception as e:
             print(
-                f"Warning: Could not create log file {args.log_file}: {e}",
+                f"Warning: Could not create log file {log_file_path}: {e}",
                 file=sys.stderr,
             )
 
@@ -702,8 +760,8 @@ def main():
     logger.setLevel(log_level)
 
     logger.info(f"Logging level set to {args.log_level}")
-    if args.log_file:
-        logger.info(f"Logging to file: {args.log_file}")
+    if log_file_path:
+        logger.info(f"Logging to file: {log_file_path}")
 
     app = SightlineApp()
     try:

@@ -375,30 +375,57 @@ app = BUNDLE(
     },
 )
 
-# Create symlink for speechbrain in Frameworks directory
+# Create symlink for speechbrain in Frameworks directory (if needed)
 # speechbrain's find_imports looks in Frameworks/, but PyInstaller puts it in Resources/
+# Remove invalid symlinks that may be created by PyInstaller or other processes
 if sys.platform == 'darwin':
-    import subprocess
-    frameworks_path = Path(f"dist/{app_name}.app/Contents/Frameworks")
+    app_bundle_path = Path(f"dist/{app_name}.app")
+    frameworks_path = app_bundle_path / "Contents" / "Frameworks"
+    resources_path = app_bundle_path / "Contents" / "Resources"
+
     if frameworks_path.exists():
-        symlink_cmd = f"cd {frameworks_path} && ln -sf ../Resources/speechbrain speechbrain"
-        subprocess.run(symlink_cmd, shell=True, check=True)
-        print(f"✓ Created speechbrain symlink in Frameworks directory")
+        # Remove invalid symlinks in Frameworks (tk and tcl - these shouldn't exist)
+        # Remove ALL tk/tcl symlinks regardless of whether they're broken, as they shouldn't be in Frameworks
+        for invalid_name in ["tk", "tcl"]:
+            invalid_path = frameworks_path / invalid_name
+            if invalid_path.exists():
+                if invalid_path.is_symlink():
+                    invalid_path.unlink()
+                    print(f"✓ Removed symlink: {invalid_path}")
+                elif invalid_path.is_dir():
+                    # If it's a directory, it might be a leftover - but be careful not to remove actual needed dirs
+                    # Only remove if it's empty or clearly not needed
+                    try:
+                        if not any(invalid_path.iterdir()):
+                            invalid_path.rmdir()
+                            print(f"✓ Removed empty directory: {invalid_path}")
+                    except Exception:
+                        pass
 
-        # Handle whisperx assets
-        whisperx_fw_path = frameworks_path / "whisperx"
-        whisperx_res_path = Path(f"dist/{app_name}.app/Contents/Resources/whisperx")
+        # Only create speechbrain symlink if speechbrain exists in Resources
+        if resources_path.exists():
+            speechbrain_src = resources_path / "speechbrain"
+            speechbrain_dst = frameworks_path / "speechbrain"
+            if speechbrain_src.exists() and speechbrain_src.is_dir():
+                # Remove existing symlink if present
+                if speechbrain_dst.exists() and speechbrain_dst.is_symlink():
+                    speechbrain_dst.unlink()
+                # Create symlink only if destination doesn't already exist as a directory
+                if not speechbrain_dst.exists():
+                    # Use relative path from Frameworks to Resources/speechbrain
+                    speechbrain_dst.symlink_to("../Resources/speechbrain")
+                    print(f"✓ Created speechbrain symlink in Frameworks directory")
 
-        if whisperx_fw_path.exists():
-            # whisperx is in Frameworks, symlink assets folder if it exists in Resources
-            print(f"✓ whisperx found in Frameworks")
-            if (whisperx_res_path / "assets").exists():
-                 symlink_cmd = f"cd {whisperx_fw_path} && ln -sf ../../../Resources/whisperx/assets assets"
-                 subprocess.run(symlink_cmd, shell=True, check=True)
-                 print(f"✓ Created whisperx assets symlink in Frameworks directory")
-        else:
-            # whisperx not in Frameworks, symlink the whole package
-            print(f"ℹ whisperx not in Frameworks, symlinking package")
-            symlink_cmd = f"cd {frameworks_path} && ln -sf ../Resources/whisperx whisperx"
-            subprocess.run(symlink_cmd, shell=True, check=True)
-            print(f"✓ Created whisperx symlink in Frameworks directory")
+    # Remove invalid self-referential symlink in speechbrain (if created by PyInstaller)
+    if resources_path.exists():
+        speechbrain_self_link = resources_path / "speechbrain" / "speechbrain"
+        if speechbrain_self_link.exists() and speechbrain_self_link.is_symlink():
+            try:
+                target = speechbrain_self_link.readlink()
+                # Check if it's self-referential
+                if str(target) == "." or str(target) == "speechbrain" or "speechbrain" in str(target):
+                    speechbrain_self_link.unlink()
+                    print(f"✓ Removed self-referential symlink: {speechbrain_self_link}")
+            except Exception:
+                speechbrain_self_link.unlink()
+                print(f"✓ Removed broken symlink: {speechbrain_self_link}")
