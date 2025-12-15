@@ -184,10 +184,8 @@ class ManageModelsDialog(ctk.CTkToplevel):
             self.download_btn.configure(state="disabled")
             return
 
-        # Check if models exist on disk
-        from config_manager import get_models_path
-        models_path = get_models_path()
-        models_exist = self._check_models_exist(models_path)
+        # Check if models exist in Hugging Face cache
+        models_exist = self._check_models_exist()
 
         if models_exist:
             self.status_label.configure(
@@ -202,22 +200,36 @@ class ManageModelsDialog(ctk.CTkToplevel):
             )
             self.download_btn.configure(text="Download Models", state="normal")
 
-    def _check_models_exist(self, models_path: Path) -> bool:
-        """Check if required models exist on disk.
-
-        Args:
-            models_path: Path to the models directory.
+    def _check_models_exist(self) -> bool:
+        """Check if required models exist in Hugging Face cache.
 
         Returns:
             True if all required models exist, False otherwise.
         """
+        # Get Hugging Face cache directory
+        hf_cache = os.environ.get("HF_HOME") or os.path.expanduser("~/.cache/huggingface")
+        hub_dir = Path(hf_cache) / "hub"
+
+        if not hub_dir.exists():
+            return False
+
         for model_id in REQUIRED_MODELS:
-            # Model ID format: "org/model-name"
-            # HuggingFace stores models in: models_path/org--model-name
-            model_name = model_id.replace("/", "--")
-            model_dir = models_path / model_name
-            if not model_dir.exists() or not any(model_dir.iterdir()):
+            # Hugging Face stores models as: models--org--model-name--<hash>/
+            # We need to find any directory that starts with models--org--model-name
+            model_prefix = f"models--{model_id.replace('/', '--')}"
+
+            # Search for directories matching the prefix
+            found = False
+            for item in hub_dir.iterdir():
+                if item.is_dir() and item.name.startswith(model_prefix):
+                    # Check if directory has content
+                    if any(item.iterdir()):
+                        found = True
+                        break
+
+            if not found:
                 return False
+
         return True
 
     def _start_download(self):
@@ -250,8 +262,6 @@ class ManageModelsDialog(ctk.CTkToplevel):
             # Login with token
             login(token=token)
 
-            from config_manager import get_models_path
-            models_path = get_models_path()
             total_models = len(REQUIRED_MODELS)
 
             for idx, model_id in enumerate(REQUIRED_MODELS):
@@ -269,11 +279,9 @@ class ManageModelsDialog(ctk.CTkToplevel):
                     text_color="blue"
                 ))
 
-                # Download model
+                # Download model to default Hugging Face cache (no local_dir specified)
                 snapshot_download(
                     repo_id=model_id,
-                    local_dir=str(models_path / model_id.replace("/", "--")),
-                    local_dir_use_symlinks=False,
                     token=token,
                 )
 

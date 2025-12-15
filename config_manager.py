@@ -150,40 +150,16 @@ def save_config(config: Dict[str, Any]) -> bool:
 
 
 def get_models_path() -> Path:
-    """Get the path where transcription models should be stored.
-
-    Uses platform-appropriate storage:
-    - macOS: ~/Library/Application Support/sightline/models
-    - Windows: %APPDATA%/sightline/models
-    - Linux: ~/.config/sightline/models
+    """Get the path to the Hugging Face default models cache directory.
 
     Returns:
-        Path to the models directory.
+        Path to the Hugging Face cache directory (HF_HOME or ~/.cache/huggingface).
     """
-    home = Path.home()
-
-    # Use platform-specific paths
-    if sys.platform == "darwin":  # macOS
-        models_dir = home / "Library" / "Application Support" / "sightline" / "models"
-    elif sys.platform == "win32":  # Windows
-        appdata = os.environ.get("APPDATA")
-        if appdata:
-            models_dir = Path(appdata) / "sightline" / "models"
-        else:
-            models_dir = home / ".sightline" / "models"
-    else:  # Linux and other Unix-like systems
-        models_dir = home / ".config" / "sightline" / "models"
-
-    # Create directory if it doesn't exist
-    try:
-        models_dir.mkdir(parents=True, exist_ok=True)
-    except (OSError, PermissionError) as e:
-        logger.warning(f"Could not create models directory {models_dir}: {e}")
-        # Fallback to home directory
-        models_dir = home / ".sightline" / "models"
-        models_dir.mkdir(parents=True, exist_ok=True)
-
-    return models_dir
+    hf_home = os.environ.get("HF_HOME")
+    if hf_home:
+        return Path(hf_home)
+    else:
+        return Path.home() / ".cache" / "huggingface"
 
 
 def get_default_config() -> Dict[str, Any]:
