@@ -207,42 +207,92 @@ if sys.platform == 'darwin':
         print(f"✗ Tk library not found at: {tk_lib}")
 elif sys.platform == 'win32':
     # Find Tcl/Tk libraries from Python prefix (Windows/Conda)
-    # Conda on Windows puts Tcl/Tk in Library/lib or tcl subdirectories
-    tcl_candidates = [
-        Path(sys.prefix) / 'Library' / 'lib' / 'tcl8.6',
-        Path(sys.prefix) / 'tcl' / 'tcl8.6',
-        Path(sys.prefix) / 'lib' / 'tcl8.6',
-        Path(sys.base_prefix) / 'Library' / 'lib' / 'tcl8.6',
-        Path(sys.base_prefix) / 'tcl' / 'tcl8.6',
-    ]
-    tk_candidates = [
-        Path(sys.prefix) / 'Library' / 'lib' / 'tk8.6',
-        Path(sys.prefix) / 'tcl' / 'tk8.6',
-        Path(sys.prefix) / 'lib' / 'tk8.6',
-        Path(sys.base_prefix) / 'Library' / 'lib' / 'tk8.6',
-        Path(sys.base_prefix) / 'tcl' / 'tk8.6',
-    ]
-
+    # First, try to use tkinter to find the paths programmatically
     tcl_lib = None
-    for candidate in tcl_candidates:
-        if candidate.exists() and (candidate / 'init.tcl').exists():
-            tcl_lib = candidate
-            break
-
     tk_lib = None
-    for candidate in tk_candidates:
-        if candidate.exists() and (candidate / 'tk.tcl').exists():
-            tk_lib = candidate
-            break
+    
+    try:
+        import tkinter
+        # Try to get Tcl/Tk paths from tkinter
+        # This may create a window briefly, but it's the most reliable way
+        root = tkinter.Tk()
+        root.withdraw()  # Hide the window
+        tcl_lib_path = root.tk.eval('info library')
+        tk_lib_path = root.tk.eval('set tk_library')
+        root.destroy()
+        
+        if tcl_lib_path:
+            tcl_lib = Path(tcl_lib_path)
+            if tcl_lib.exists() and (tcl_lib / 'init.tcl').exists():
+                print(f"✓ Found Tcl library via tkinter at: {tcl_lib}")
+            else:
+                tcl_lib = None
+        
+        if tk_lib_path:
+            tk_lib = Path(tk_lib_path)
+            if tk_lib.exists() and (tk_lib / 'tk.tcl').exists():
+                print(f"✓ Found Tk library via tkinter at: {tk_lib}")
+            else:
+                tk_lib = None
+    except Exception as e:
+        print(f"Note: Could not use tkinter to find Tcl/Tk paths: {e}")
+    
+    # If tkinter method didn't work, try candidate paths relative to Python installation
+    if not tcl_lib or not tk_lib:
+        tcl_candidates = [
+            Path(sys.prefix) / 'Library' / 'lib' / 'tcl8.6',
+            Path(sys.prefix) / 'tcl' / 'tcl8.6',
+            Path(sys.prefix) / 'lib' / 'tcl8.6',
+            Path(sys.base_prefix) / 'Library' / 'lib' / 'tcl8.6',
+            Path(sys.base_prefix) / 'tcl' / 'tcl8.6',
+            Path(sys.base_prefix) / 'lib' / 'tcl8.6',
+        ]
+        tk_candidates = [
+            Path(sys.prefix) / 'Library' / 'lib' / 'tk8.6',
+            Path(sys.prefix) / 'tcl' / 'tk8.6',
+            Path(sys.prefix) / 'lib' / 'tk8.6',
+            Path(sys.base_prefix) / 'Library' / 'lib' / 'tk8.6',
+            Path(sys.base_prefix) / 'tcl' / 'tk8.6',
+            Path(sys.base_prefix) / 'lib' / 'tk8.6',
+        ]
+        
+        # Try to find Python installation from sys.executable if available
+        if hasattr(sys, 'executable') and sys.executable:
+            python_exe = Path(sys.executable)
+            if python_exe.exists():
+                # Check parent directories of Python executable
+                for parent in [python_exe.parent, python_exe.parent.parent]:
+                    tcl_candidates.extend([
+                        parent / 'tcl' / 'tcl8.6',
+                        parent / 'lib' / 'tcl8.6',
+                        parent / 'Library' / 'lib' / 'tcl8.6',
+                    ])
+                    tk_candidates.extend([
+                        parent / 'tcl' / 'tk8.6',
+                        parent / 'lib' / 'tk8.6',
+                        parent / 'Library' / 'lib' / 'tk8.6',
+                    ])
+
+        if not tcl_lib:
+            for candidate in tcl_candidates:
+                if candidate.exists() and (candidate / 'init.tcl').exists():
+                    tcl_lib = candidate
+                    break
+
+        if not tk_lib:
+            for candidate in tk_candidates:
+                if candidate.exists() and (candidate / 'tk.tcl').exists():
+                    tk_lib = candidate
+                    break
 
     if tcl_lib:
-        tcl_tk_datas.append((str(tcl_lib), '_tcl_data'))
+        tcl_tk_datas.append((str(tcl_lib), 'lib/tcl8.6'))
         print(f"✓ Found Tcl library at: {tcl_lib}")
     else:
         print(f"✗ Tcl library not found in any candidate location")
 
     if tk_lib:
-        tcl_tk_datas.append((str(tk_lib), '_tk_data'))
+        tcl_tk_datas.append((str(tk_lib), 'lib/tk8.6'))
         print(f"✓ Found Tk library at: {tk_lib}")
     else:
         print(f"✗ Tk library not found in any candidate location")
@@ -429,3 +479,19 @@ if sys.platform == 'darwin':
             except Exception:
                 speechbrain_self_link.unlink()
                 print(f"✓ Removed broken symlink: {speechbrain_self_link}")
+
+# Windows: Copy Tcl/Tk lib folder to top level for native Tcl discovery
+# Tcl looks for lib/tcl8.6 relative to the executable, but PyInstaller puts
+# data files in _internal/. Copy them to both locations to ensure they're found.
+if sys.platform == 'win32':
+    import shutil
+    dist_path = Path(f"dist/{app_name}")
+    internal_lib = dist_path / "_internal" / "lib"
+    top_lib = dist_path / "lib"
+    
+    if internal_lib.exists():
+        # Copy lib folder from _internal to top level
+        if top_lib.exists():
+            shutil.rmtree(top_lib)
+        shutil.copytree(internal_lib, top_lib)
+        print(f"✓ Copied Tcl/Tk lib folder to {top_lib}")

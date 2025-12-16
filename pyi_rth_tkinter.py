@@ -53,12 +53,14 @@ def _find_tcl_tk_paths():
     # Also check relative to exe directory (in case _MEIPASS is different)
     internal_dir = os.path.join(exe_dir, '_internal')
 
-    # Priority order: Check _internal/_tcl_data first (most common for one-dir bundles)
-    # PyInstaller 6.x typically has _MEIPASS pointing to _internal folder
-    # The _tcl_data and _tk_data are inside _internal
+    # Priority order: Check lib/tcl8.6 first (standard Tcl location)
+    # This matches where Tcl natively looks for its library files
     candidates_tcl.extend([
-        os.path.join(internal_dir, '_tcl_data'),  # Highest priority: exe_dir/_internal/_tcl_data
-        os.path.join(meipass, '_tcl_data'),       # meipass/_tcl_data (if meipass is _internal)
+        os.path.join(exe_dir, 'lib', 'tcl8.6'),   # Highest priority: standard Tcl location
+        os.path.join(internal_dir, 'lib', 'tcl8.6'),
+        os.path.join(meipass, 'lib', 'tcl8.6'),
+        os.path.join(internal_dir, '_tcl_data'),  # Legacy location
+        os.path.join(meipass, '_tcl_data'),
         os.path.join(meipass, 'tcl'),
         os.path.join(meipass, 'tcl8.6'),
         os.path.join(internal_dir, 'tcl'),
@@ -66,8 +68,11 @@ def _find_tcl_tk_paths():
         os.path.join(exe_dir, 'tcl'),
     ])
     candidates_tk.extend([
-        os.path.join(internal_dir, '_tk_data'),   # Highest priority: exe_dir/_internal/_tk_data
-        os.path.join(meipass, '_tk_data'),        # meipass/_tk_data (if meipass is _internal)
+        os.path.join(exe_dir, 'lib', 'tk8.6'),    # Highest priority: standard Tk location
+        os.path.join(internal_dir, 'lib', 'tk8.6'),
+        os.path.join(meipass, 'lib', 'tk8.6'),
+        os.path.join(internal_dir, '_tk_data'),   # Legacy location
+        os.path.join(meipass, '_tk_data'),
         os.path.join(meipass, 'tk'),
         os.path.join(meipass, 'tk8.6'),
         os.path.join(internal_dir, 'tk'),
@@ -75,14 +80,12 @@ def _find_tcl_tk_paths():
         os.path.join(exe_dir, 'tk'),
     ])
 
-    # Windows: Check lib/tcl8.6 and lib/tk8.6 (where Makefile post-processing puts them)
+    # Windows: Additional fallback locations
     if sys.platform == 'win32':
         candidates_tcl.extend([
-            os.path.join(exe_dir, 'lib', 'tcl8.6'),
             os.path.join(exe_dir, 'lib', 'tcl'),
         ])
         candidates_tk.extend([
-            os.path.join(exe_dir, 'lib', 'tk8.6'),
             os.path.join(exe_dir, 'lib', 'tk'),
         ])
 
