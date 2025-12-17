@@ -3,8 +3,10 @@
 This module contains the UI and logic for batch processing audio/video files for transcription.
 """
 
+import contextlib
 import logging
 import os
+import sys
 import time
 import threading
 import traceback
@@ -22,6 +24,33 @@ from views.generic_batch_view import GenericBatchView
 from views.dialogs import ManageModelsDialog
 
 logger = logging.getLogger(__name__)
+
+# Some Windows + PyInstaller "windowed" builds set sys.stdout/sys.stderr to None.
+# torch.hub (used by WhisperX's Silero VAD) calls sys.stdout.write(...) while downloading,
+# which crashes if stdout is None.
+class _NullWriter:
+    def write(self, _: str) -> int:  # type: ignore[override]
+        return 0
+
+    def flush(self) -> None:
+        return None
+
+    def isatty(self) -> bool:
+        return False
+
+
+@contextlib.contextmanager
+def _ensure_stdio():
+    old_stdout, old_stderr = sys.stdout, sys.stderr
+    try:
+        if sys.stdout is None:
+            sys.stdout = sys.__stdout__ or _NullWriter()  # type: ignore[assignment]
+        if sys.stderr is None:
+            sys.stderr = sys.__stderr__ or _NullWriter()  # type: ignore[assignment]
+        yield
+    finally:
+        sys.stdout, sys.stderr = old_stdout, old_stderr
+
 
 # Supported file extensions for transcription
 SUPPORTED_EXTENSIONS = {
@@ -253,8 +282,14 @@ class TranscriptionView(GenericBatchView):
             start_time = time.time()
             try:
                 from huggingface_hub import login
-                login(token=token)
-                model = whisperx.load_model("base", device, compute_type=compute_type, vad_method="silero")
+                with _ensure_stdio():
+                    login(token=token)
+                    model = whisperx.load_model(
+                        "base",
+                        device,
+                        compute_type=compute_type,
+                        vad_method="silero",
+                    )
                 elapsed_time = time.time() - start_time
                 logger.info(f"WhisperX model loaded successfully in {elapsed_time:.2f} seconds ({elapsed_time/60:.2f} minutes)")
             except Exception as e:
