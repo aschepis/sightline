@@ -180,8 +180,10 @@ jobs:
 
       - name: Build Windows executable
         shell: bash -el {0}
+        env:
+          PYINSTALLER_NO_CONDA: 1
         run: |
-          conda run -n sightline-build python -m PyInstaller sightline.spec --clean --noconfirm
+          conda run -n sightline-build bash scripts/pyinstaller-without-conda.sh sightline.spec --clean --noconfirm
 
       - name: Install Inno Setup
         run: |
@@ -253,8 +255,9 @@ jobs:
         shell: bash -el {0}
         env:
           ARCH: ${{ matrix.arch }}
+          PYINSTALLER_NO_CONDA: 1
         run: |
-          conda run -n sightline-build python -m PyInstaller sightline.spec --clean --noconfirm
+          conda run -n sightline-build bash scripts/pyinstaller-without-conda.sh sightline.spec --clean --noconfirm
 
       - name: Remove large files and unnecessary CUDA components
         shell: bash -el {0}
