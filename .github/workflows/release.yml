@@ -181,7 +181,7 @@ jobs:
       - name: Build Windows executable
         shell: bash -el {0}
         run: |
-          conda run -n sightline-build python -m PyInstaller sightline.spec --clean --noconfirm
+          conda run -n sightline-build bash -c 'unset CONDA_PREFIX; python -m PyInstaller sightline.spec --clean --noconfirm'
 
       - name: Install Inno Setup
         run: |
@@ -254,7 +254,7 @@ jobs:
         env:
           ARCH: ${{ matrix.arch }}
         run: |
-          conda run -n sightline-build python -m PyInstaller sightline.spec --clean --noconfirm
+          conda run -n sightline-build bash -c 'unset CONDA_PREFIX; python -m PyInstaller sightline.spec --clean --noconfirm'
 
       - name: Remove large files and unnecessary CUDA components
         shell: bash -el {0}

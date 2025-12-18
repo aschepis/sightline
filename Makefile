@@ -110,11 +110,11 @@ check: test lint
 build: build-macos
 
 build-windows:
-	$(CONDA_RUN) python -m PyInstaller $(SPEC)
+	$(CONDA_RUN) bash -c 'unset CONDA_PREFIX; python -m PyInstaller $(SPEC)'
 	@echo "Build complete! Output is in dist/Sightline/"
 
 build-macos:
-	$(CONDA_RUN) python -m PyInstaller $(SPEC)
+	$(CONDA_RUN) bash -c 'unset CONDA_PREFIX; python -m PyInstaller $(SPEC)'
 	@echo "→ Post-processing: Moving Tcl/Tk libraries to lib directory..."
 	@if [ -d "$(DIST_APP)/Contents/Resources/tcl" ]; then \
 		mkdir -p $(DIST_APP)/Contents/lib; \
