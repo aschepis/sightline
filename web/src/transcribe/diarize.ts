@@ -19,11 +19,18 @@ export function cosineDistance(a: Float32Array, b: Float32Array): number {
 }
 
 /**
+ * WavLM x-vectors sit close together: on a three-speaker film scene the
+ * pairwise cosine distances had a median of 0.19 and a max of 0.56, and
+ * 0.25 was the cut that produced the right speaker count.
+ */
+export const SPEAKER_DISTANCE_THRESHOLD = 0.25
+
+/**
  * Average-linkage agglomerative clustering on cosine distance. Stops at
  * `numClusters` when given, otherwise when the closest pair is farther than
  * `threshold`. Returns a cluster label per embedding.
  */
-export function clusterEmbeddings(embeddings: Float32Array[], numClusters: number | null, threshold = 0.45): number[] {
+export function clusterEmbeddings(embeddings: Float32Array[], numClusters: number | null, threshold = SPEAKER_DISTANCE_THRESHOLD): number[] {
   const n = embeddings.length
   if (n === 0) return []
   const dist: number[][] = embeddings.map((a) => embeddings.map((b) => cosineDistance(a, b)))

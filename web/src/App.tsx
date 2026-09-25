@@ -52,11 +52,11 @@ export default function App() {
         <div className="small muted">
           {caps ? (
             <>
-              Compute: <strong>{engine.activeBackend()}</strong>
+              {engine.activeBackend() === 'remote' ? 'Sending files to your server' : 'Working on this computer'}
               <br />
-              {caps.webcodecs ? 'WebCodecs ready' : 'No WebCodecs: video disabled'}
+              {engine.activeBackend() === 'webgpu' ? 'Using the graphics card' : engine.activeBackend() === 'wasm' ? 'Using the main processor' : ''}
               <br />
-              {caps.crossOriginIsolated ? 'Multi-threaded' : 'Single-threaded'}
+              {caps.webcodecs ? 'Video editing available' : 'Video needs a newer browser'}
             </>
           ) : (
             'Probing device…'

@@ -1,5 +1,6 @@
 import { decodeSamples, assertDecodable } from '../video/decode'
 import { indexMedia, SampleReader, type MediaIndex, type VideoTrackIndex } from '../video/demux'
+import { drawUpright } from '../video/rotate'
 
 /**
  * Random access to decoded frames for the editor. A request for frame N
@@ -14,6 +15,7 @@ export class FrameSource {
   /** Presentation-order sample numbers, since decode order can differ. */
   private presentationOrder: number[]
   private inflight: Promise<void> | null = null
+  private upright: OffscreenCanvas | null = null
 
   private cacheSize: number
 
@@ -86,11 +88,18 @@ export class FrameSource {
       const frameNumber = this.frameNumberFor(vf.timestamp)
       if (frameNumber < 0) return
       if (!this.cache.has(frameNumber)) {
-        const bitmap = await createImageBitmap(vf)
-        this.store(frameNumber, bitmap)
+        this.store(frameNumber, await this.toUprightBitmap(vf))
       }
       if (frameNumber === target) reached = true
     })
+  }
+
+  private async toUprightBitmap(frame: VideoFrame): Promise<ImageBitmap> {
+    if (this.track.rotation === 0) return createImageBitmap(frame)
+    if (!this.upright) this.upright = new OffscreenCanvas(this.track.displayWidth, this.track.displayHeight)
+    const ctx = this.upright.getContext('2d')!
+    drawUpright(ctx, frame, this.track.rotation, this.track.width, this.track.height)
+    return createImageBitmap(this.upright)
   }
 
   private frameNumberFor(cts: number): number {

@@ -4,6 +4,8 @@ export interface TranscribeOptions {
   language: string
   diarize: boolean
   numSpeakers: number | null
+  /** Development only: include raw diarization data in the result. */
+  debug?: boolean
 }
 
 export interface Word {
@@ -34,6 +36,7 @@ export interface TranscriptResult {
   text: string
   durationSeconds: number
   model: string
+  debug?: { rawSegments: Array<{ start: number; end: number }>; embeddings: number[][] }
 }
 
 export interface WhisperModelChoice {

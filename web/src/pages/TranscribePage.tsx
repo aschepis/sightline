@@ -50,13 +50,13 @@ export function TranscribePage() {
     <>
       <div className="page-header">
         <h1>Transcription</h1>
-        <span className="muted small">Whisper for speech, pyannote for speakers. No Hugging Face token needed.</span>
+        <span className="muted small">Your recordings are transcribed on your computer, not sent to a service.</span>
       </div>
-      {caps && !caps.webgpu && <div className="notice info">WebGPU is unavailable, so Whisper runs on WebAssembly. Expect roughly real-time speed with the base model; larger models will be slow.</div>}
+      {caps && !caps.webgpu && <div className="notice info">This browser cannot use your graphics card for speed, so transcription runs on the main processor. Expect it to take about as long as the recording itself with the "base" model, and longer with bigger models.</div>}
       <div className="grid-2">
         <div className="panel stack">
           <h3>Files</h3>
-          <DropZone accept="audio/*,video/*,.mp3,.wav,.m4a,.mp4,.mov" label="Drop audio or video here" hint="Audio is decoded and processed locally." onFiles={addFiles} />
+          <DropZone accept="audio/*,video/*,.mp3,.wav,.m4a,.mp4,.mov" label="Drop audio or video here" hint="MP3, WAV, M4A, or a video. The recording stays on your computer and is not uploaded." onFiles={addFiles} />
           <div className="row">
             <button onClick={() => engine.queue.start()} disabled={pending === 0}>
               Start ({pending})

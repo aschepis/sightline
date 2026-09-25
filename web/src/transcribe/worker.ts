@@ -74,8 +74,11 @@ async function transcribe(id: string, audio: Float32Array, options: TranscribeOp
   post({ type: 'progress', id, fraction: 0.6, message: options.diarize ? 'Finding speakers' : 'Done' })
 
   let turns: SpeakerTurn[] = []
+  let debug: TranscriptResult['debug']
   if (options.diarize) {
-    turns = await diarize(id, audio, options.numSpeakers)
+    const d = await diarize(id, audio, options.numSpeakers)
+    turns = d.turns
+    if (options.debug) debug = { rawSegments: d.usable, embeddings: d.embeddings.map((e) => Array.from(e)) }
     segments = splitSegmentsBySpeaker(assignWordSpeakers(turns, segments))
   }
   return {
@@ -85,6 +88,7 @@ async function transcribe(id: string, audio: Float32Array, options: TranscribeOp
     text: output.text.trim(),
     durationSeconds,
     model: options.model,
+    debug,
   }
 }
 
@@ -95,7 +99,7 @@ const MIN_SEGMENT_SECONDS = 0.6
  * pyannote segmentation gives local speaker turns per 30 s window; WavLM
  * x-vectors plus clustering turn those into global speaker labels.
  */
-async function diarize(id: string, audio: Float32Array, numSpeakers: number | null): Promise<SpeakerTurn[]> {
+async function diarize(id: string, audio: Float32Array, numSpeakers: number | null): Promise<{ turns: SpeakerTurn[]; usable: Array<{ start: number; end: number }>; embeddings: Float32Array[] }> {
   const progress = (p: { status: string; file?: string; progress?: number }) => {
     if (p.status === 'progress' && p.file) post({ type: 'progress', id, fraction: 0.6, message: `Downloading ${p.file} ${Math.round(p.progress ?? 0)}%` })
   }
@@ -137,5 +141,5 @@ async function diarize(id: string, audio: Float32Array, numSpeakers: number | nu
   const turns = usable.map((s, i) => ({ start: s.start, end: s.end, speaker: speakerName(labels[i]) }))
   const merged = mergeTurns(turns)
   post({ type: 'log', id, line: `${new Set(labels).size} speaker(s) found across ${merged.length} turns` })
-  return merged
+  return { turns: merged, usable, embeddings }
 }

@@ -1,6 +1,7 @@
 import { decodeSamples, assertDecodable } from './decode'
 import { indexMedia, SampleReader } from './demux'
 import { VideoWriter } from './encode'
+import { drawUpright } from './rotate'
 
 export interface FrameContext {
   index: number
@@ -34,10 +35,13 @@ export async function processVideo(file: File, options: ProcessVideoOptions): Pr
   const track = index.video
   await assertDecodable(track)
   const reader = new SampleReader(file)
-  const writer = new VideoWriter({ width: track.width, height: track.height, fps: track.fps, audio: index.audio, keepAudio: options.keepAudio, log: options.log })
+  const width = track.displayWidth
+  const height = track.displayHeight
+  if (track.rotation !== 0) options.log?.(`Source is rotated ${track.rotation}°; frames are turned upright before processing.`)
+  const writer = new VideoWriter({ width, height, fps: track.fps, audio: index.audio, keepAudio: options.keepAudio, log: options.log })
   await writer.open()
 
-  const canvas = new OffscreenCanvas(track.width, track.height)
+  const canvas = new OffscreenCanvas(width, height)
   const ctx = canvas.getContext('2d', { willReadFrequently: true })!
   const total = track.samples.length
   let processed = 0
@@ -47,9 +51,9 @@ export async function processVideo(file: File, options: ProcessVideoOptions): Pr
       track.samples,
       reader,
       async (frame) => {
-        ctx.drawImage(frame, 0, 0, track.width, track.height)
-        const image = ctx.getImageData(0, 0, track.width, track.height)
-        const changed = await options.processFrame(canvas, image, { index: processed, total, time: frame.timestamp / 1e6, width: track.width, height: track.height })
+        drawUpright(ctx, frame, track.rotation, track.width, track.height)
+        const image = ctx.getImageData(0, 0, width, height)
+        const changed = await options.processFrame(canvas, image, { index: processed, total, time: frame.timestamp / 1e6, width, height })
         if (changed) ctx.putImageData(image, 0, 0)
         const out = new VideoFrame(canvas, { timestamp: frame.timestamp, duration: frame.duration ?? undefined })
         try {

@@ -388,3 +388,19 @@ Things learned that changed the plan:
   Pages: the landing page already lives there, deploys need no secrets, and
   the only cost is single-threaded WebAssembly on the CPU fallback. The
   header-injecting service worker is the upgrade path if that ever matters.
+
+Fixes after the first deploy (2026-09-25, later the same day):
+
+- Photos: the browser decodes JPEGs upright, so the copied EXIF now has its
+  Orientation reset to 1 instead of making viewers rotate the result twice.
+- Videos: the track-header rotation matrix is read and frames are turned
+  upright before detection and encoding, matching what ffmpeg does for the
+  desktop app. Phone videos with fractional frame rates no longer fail in the
+  muxer, and AAC config is synthesized when a container lacks it.
+- The decode loop now wakes on decoder dequeue events and yields with a
+  timer; a MessageChannel yield starved the decoder's output callbacks and
+  long videos hung at frame zero.
+- Speaker clustering threshold is 0.25 cosine distance, measured on a
+  three-speaker clip where 0.45 collapsed everyone into one speaker.
+- All user-facing copy now says in plain words that files stay on the
+  user's computer and are never uploaded.

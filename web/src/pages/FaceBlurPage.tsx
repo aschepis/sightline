@@ -27,13 +27,13 @@ export function FaceBlurPage() {
     <>
       <div className="page-header">
         <h1>Blur Faces</h1>
-        <span className="muted small">Runs the same CenterFace detector as the desktop app.</span>
+        <span className="muted small">Everything happens on your computer. Files are never uploaded.</span>
       </div>
       {caps && !caps.webcodecs && <div className="notice">This browser lacks WebCodecs, so only images can be processed here. Videos need Chrome, Edge, Safari 16.4+ or Firefox 130+.</div>}
       <div className="grid-2">
         <div className="panel stack">
           <h3>Files</h3>
-          <DropZone accept={ACCEPT} label="Drop images or videos here" hint="JPG, PNG, WebP, MP4, MOV. Nothing leaves this device." onFiles={addFiles} />
+          <DropZone accept={ACCEPT} label="Drop images or videos here" hint="JPG, PNG, WebP, MP4, MOV. The files stay on your computer and are not uploaded." onFiles={addFiles} />
           <div className="row">
             <button onClick={() => engine.queue.start()} disabled={pending === 0}>
               Start ({pending})

@@ -62,7 +62,8 @@ export class VideoWriter {
     this.audioMode = keepAudio && audio ? await this.chooseAudioMode(audio) : 'none'
     this.muxer = new Muxer({
       target: new ArrayBufferTarget(),
-      video: { codec: picked.mux, width, height, frameRate: fps },
+      // mp4-muxer wants an integer here; real per-frame timestamps still carry the true rate.
+      video: { codec: picked.mux, width, height, frameRate: Math.max(1, Math.round(fps)) },
       audio: this.audioMode === 'none' || !audio ? undefined : { codec: this.audioCodec, sampleRate: audio.sampleRate, numberOfChannels: audio.channelCount },
       fastStart: 'in-memory',
       firstTimestampBehavior: 'offset',
@@ -120,19 +121,22 @@ export class VideoWriter {
     const audio = this.options.audio
     if (!audio || this.audioMode === 'none') return
     if (this.audioMode === 'copy') {
+      const description = audio.description ?? (this.audioCodec === 'aac' ? aacAudioSpecificConfig(audio.sampleRate, audio.channelCount) : undefined)
       let first = true
       for (const sample of audio.samples) {
         if (signal?.aborted) throw new Error('Cancelled')
         const data = await reader.read(sample)
         const meta: EncodedAudioChunkMetadata | undefined = first
-          ? { decoderConfig: { codec: audio.codec, sampleRate: audio.sampleRate, numberOfChannels: audio.channelCount, description: audio.description ?? undefined } }
+          ? { decoderConfig: { codec: audio.codec, sampleRate: audio.sampleRate, numberOfChannels: audio.channelCount, description } }
           : undefined
         this.muxer.addAudioChunkRaw(data, 'key', sample.cts, sample.duration, meta)
         first = false
       }
+      this.options.log?.(`Audio: copied ${audio.samples.length} ${audio.codec} chunks${audio.description ? '' : ' (synthesized AAC config)'}`)
       return
     }
     await this.reencodeAudio(reader, audio, signal)
+    this.options.log?.(`Audio: re-encoded ${audio.codec} to ${this.audioCodec}`)
   }
 
   private async reencodeAudio(reader: SampleReader, audio: AudioTrackIndex, signal?: AbortSignal): Promise<void> {
@@ -180,4 +184,15 @@ export class VideoWriter {
   abort(): void {
     if (this.encoder && this.encoder.state !== 'closed') this.encoder.close()
   }
+}
+
+const AAC_SAMPLE_RATES = [96000, 88200, 64000, 48000, 44100, 32000, 24000, 22050, 16000, 12000, 11025, 8000, 7350]
+
+/** Two-byte AudioSpecificConfig for AAC-LC, used when the container lacks an esds payload. */
+export function aacAudioSpecificConfig(sampleRate: number, channels: number): Uint8Array {
+  let index = AAC_SAMPLE_RATES.indexOf(sampleRate)
+  if (index < 0) index = 4
+  const objectType = 2
+  const bits = (objectType << 11) | (index << 7) | (Math.min(7, channels) << 3)
+  return new Uint8Array([(bits >> 8) & 0xff, bits & 0xff])
 }

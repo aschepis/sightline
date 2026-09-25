@@ -64,3 +64,19 @@ describe('boxBlurRegion', () => {
     expect(out[2]).toBe(200)
   })
 })
+
+describe('EXIF orientation', () => {
+  it('resets Orientation to 1 when copying EXIF', async () => {
+    const { copyJpegExif } = await import('../src/faceblur/exif')
+    // Minimal big-endian EXIF with one IFD0 entry: Orientation = 6.
+    const tiff = [0x4d, 0x4d, 0x00, 0x2a, 0x00, 0x00, 0x00, 0x08, 0x00, 0x01, 0x01, 0x12, 0x00, 0x03, 0x00, 0x00, 0x00, 0x01, 0x00, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+    const payload = [0x45, 0x78, 0x69, 0x66, 0x00, 0x00, ...tiff]
+    const len = payload.length + 2
+    const source = new Uint8Array([0xff, 0xd8, 0xff, 0xe1, len >> 8, len & 0xff, ...payload, 0xff, 0xd9])
+    const target = new Uint8Array([0xff, 0xd8, 0xff, 0xd9])
+    const out = copyJpegExif(source, target)
+    expect(out.length).toBe(target.length + len + 2)
+    const orientationValue = out[2 + 2 + 2 + 6 + 8 + 2 + 8 + 1]
+    expect(orientationValue).toBe(1)
+  })
+})

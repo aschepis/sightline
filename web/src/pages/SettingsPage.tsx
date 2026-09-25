@@ -15,21 +15,21 @@ export function SettingsPage() {
           <label className="field">
             Execution
             <select value={config.execution} onChange={(e) => update({ execution: e.target.value as ExecutionPreference })}>
-              <option value="auto">Auto (WebGPU when available, else WebAssembly)</option>
+              <option value="auto">On this computer, fastest available (recommended)</option>
               <option value="webgpu" disabled={!caps?.webgpu}>
-                WebGPU on this device
+                On this computer, using the graphics card
               </option>
-              <option value="wasm">WebAssembly on this device</option>
+              <option value="wasm">On this computer, using the main processor only</option>
               <option value="remote" disabled={!config.remoteEndpoint}>
-                Remote server (uploads your files)
+                On my own server (uploads your files there)
               </option>
             </select>
           </label>
           <label className="field">
-            Remote executor URL <span className="small">optional; see WEB_APP_PLAN.md section 5.2</span>
+            Address of your own Sightline server <span className="small">optional. Leave empty to keep everything on this computer.</span>
             <input type="url" placeholder="https://api.sightline.example" value={config.remoteEndpoint} onChange={(e) => update({ remoteEndpoint: e.target.value })} />
           </label>
-          {config.execution === 'remote' && <div className="notice">Files will be uploaded to {config.remoteEndpoint}. Only use a server you control.</div>}
+          {config.execution === 'remote' && <div className="notice">Your files will be uploaded to {config.remoteEndpoint} for processing. Only use a server you run yourself.</div>}
           <label className="field">
             Parallel jobs
             <input type="number" min={1} max={8} value={config.batchSize} onChange={(e) => update({ batchSize: Math.max(1, Math.min(8, Number(e.target.value) || 1)) })} style={{ width: 70 }} />

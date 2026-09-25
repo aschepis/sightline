@@ -6,7 +6,7 @@ describe('clusterEmbeddings', () => {
   it('groups similar vectors and labels by first appearance', () => {
     const a = new Float32Array([1, 0, 0])
     const b = new Float32Array([0, 1, 0])
-    const labels = clusterEmbeddings([a, b, new Float32Array([0.9, 0.1, 0]), new Float32Array([0.1, 0.95, 0])], null, 0.45)
+    const labels = clusterEmbeddings([a, b, new Float32Array([0.9, 0.1, 0]), new Float32Array([0.1, 0.95, 0])], null, 0.3)
     expect(labels).toEqual([0, 1, 0, 1])
   })
 

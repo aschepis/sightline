@@ -204,7 +204,7 @@ export function SmudgePage() {
     <>
       <div className="page-header">
         <h1>Face Smudge</h1>
-        <span className="muted small">Click or drag on the frame to blur. Space plays, arrows step, ⌘Z undoes.</span>
+        <span className="muted small">Click or drag on the picture to blur. Space plays, arrow keys step, ⌘Z undoes. The video stays on your computer.</span>
       </div>
       {caps && !caps.webcodecs && <div className="notice">This browser lacks WebCodecs, which the editor needs for frame-accurate seeking.</div>}
       {error && <div className="notice">{error}</div>}

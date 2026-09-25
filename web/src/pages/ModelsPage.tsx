@@ -16,12 +16,12 @@ export function ModelsPage() {
     <>
       <div className="page-header">
         <h1>Models</h1>
-        <span className="muted small">Downloaded once, cached in this browser, usable offline.</span>
+        <span className="muted small">The recognition software each tool uses. Downloaded once, kept in this browser, and it works without internet afterwards.</span>
       </div>
       <div className="panel stack">
         <div className="row" style={{ justifyContent: 'space-between' }}>
           <span>
-            {entries.length} cached file(s), {formatBytes(total)}
+            {entries.length} file(s) stored in this browser, {formatBytes(total)}. These are the only downloads Sightline makes; your own files are never uploaded.
           </span>
           <div className="row">
             <button className="secondary" onClick={() => void refresh()}>

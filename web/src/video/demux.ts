@@ -1,4 +1,5 @@
 import { createFile, DataStream, MP4BoxBuffer, type ISOFile, type Movie, type Sample } from 'mp4box'
+import { displaySize, rotationFromMatrix, type Rotation } from './rotate'
 
 export interface SampleRef {
   number: number
@@ -16,8 +17,14 @@ export interface SampleRef {
 export interface VideoTrackIndex {
   id: number
   codec: string
+  /** Coded frame size, what the decoder emits. */
   width: number
   height: number
+  /** Rotation from the track header that players apply on display. */
+  rotation: Rotation
+  /** Frame size after applying the rotation. */
+  displayWidth: number
+  displayHeight: number
   fps: number
   durationSeconds: number
   timescale: number
@@ -101,11 +108,18 @@ function buildVideoIndex(mp4: ISOFile, track: TrackInfo): VideoTrackIndex {
   const samples = toSampleRefs(trak.samples ?? [])
   const durationSeconds = track.duration / track.timescale
   const fps = samples.length > 1 && durationSeconds > 0 ? samples.length / durationSeconds : 30
+  const width = track.video?.width ?? track.track_width
+  const height = track.video?.height ?? track.track_height
+  const rotation = rotationFromMatrix(track.matrix as unknown as ArrayLike<number> | undefined)
+  const display = displaySize(width, height, rotation)
   return {
     id: track.id,
     codec: normalizeCodec(track.codec),
-    width: track.video?.width ?? track.track_width,
-    height: track.video?.height ?? track.track_height,
+    width,
+    height,
+    rotation,
+    displayWidth: display.width,
+    displayHeight: display.height,
     fps,
     durationSeconds,
     timescale: track.timescale,
