@@ -3,3 +3,6 @@ dist
 dev-dist
 *.local
 test-media
+
+# The root .gitignore ignores Python lib/ directories; this one is source.
+!src/lib/
