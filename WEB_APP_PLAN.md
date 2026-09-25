@@ -346,3 +346,45 @@ once the PWA is installable and offline. Decide after Phase 4 with real usage.
 Nothing in this plan changes code yet. Phase 1 (core extraction) is the first
 code change and I will describe the exact current behavior of each moved
 module before touching it.
+
+---
+
+## 9. Status (2026-09-25)
+
+Phases 0 through 4 are built in `web/` and verified in Chrome on this
+machine. Phase 5 (server executor) has its client half; the server half is
+not deployed. Phase 6 is untouched.
+
+| Piece | State | Verified |
+|---|---|---|
+| Vite + React PWA shell, job queue, executor interface | Done | Renders, WebGPU/WebCodecs probe, hash routing |
+| Face Blur, images | Done | Boxes match Python deface within 1 px on a test photo; EXIF copied |
+| Face Blur, video | Done | 90-frame 720p H.264 clip in 2.5 s on WebGPU, AAC audio copied |
+| Face Smudge editor and export | Done | Brush strokes on two frames, export blurs only those frames, audio kept |
+| Transcription | Done | Whisper base with word timestamps, pyannote + WavLM speaker labels |
+| Models page, Settings page | Done | Cache listing, delete, execution preference |
+| Remote executor client | Done, unexercised | Small HTTP contract in `src/engine/remote.ts` |
+| GitHub Pages deploy at adamschepis.com/sightline/app/ | Done | Actions workflow builds docs/ + web/dist, Pages source switched to Actions |
+| Server executor (FastAPI + worker + Helm + Tunnel) | Not started | |
+
+Things learned that changed the plan:
+
+- ONNX Runtime Web's WebGPU build in this version is the `asyncify` variant,
+  and transformers.js uses the same one. It is imported with Vite `?url` and
+  cached on first use rather than precached, so installing the PWA costs
+  1.4 MB, not 80 MB.
+- Word-level timestamps need the `onnx-community/*_timestamped` Whisper
+  exports; the plain exports raise "must contain cross attentions".
+- Diarization uses pyannote segmentation for turns and WavLM x-vectors
+  with average-linkage clustering for identity, all through transformers.js,
+  so no sherpa-onnx dependency and no Hugging Face token.
+- Video decode and encode are in the worker with a producer/consumer loop;
+  the two sides need separate wake-ups or the pipeline deadlocks.
+- WebM, MKV and AVI inputs are not handled in the browser yet (mp4box only
+  parses MP4-family containers). They are the first job for the server
+  executor or an ffmpeg.wasm demux fallback.
+- Video container metadata (`keep_metadata` for video) is not copied yet.
+- Hosting went with GitHub Pages (option B in 5.1) instead of Cloudflare
+  Pages: the landing page already lives there, deploys need no secrets, and
+  the only cost is single-threaded WebAssembly on the CPU fallback. The
+  header-injecting service worker is the upgrade path if that ever matters.
