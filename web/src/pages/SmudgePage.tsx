@@ -25,6 +25,7 @@ export function SmudgePage() {
   const [cursor, setCursor] = useState<{ x: number; y: number } | null>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const drawing = useRef<SmudgeOperation[] | null>(null)
+  const lastPointer = useRef<{ x: number; y: number } | null>(null)
   const radius = config.smudge.blurRadius
   const sigma = config.smudge.blurSigma
 
@@ -72,14 +73,14 @@ export function SmudgePage() {
       applyOperations(image, frameOps)
       ctx.putImageData(image, 0, 0)
     }
-    if (cursor && !playing) {
+    if (cursor) {
       ctx.beginPath()
       ctx.arc(cursor.x * canvas.width, cursor.y * canvas.height, radius, 0, Math.PI * 2)
       ctx.strokeStyle = '#00a6ff'
       ctx.lineWidth = 2
       ctx.stroke()
     }
-  }, [source, frame, ops, cursor, playing, radius])
+  }, [source, frame, ops, cursor, radius])
 
   useEffect(() => {
     void render()
@@ -99,6 +100,18 @@ export function SmudgePage() {
     }, interval)
     return () => clearInterval(timer)
   }, [playing, speed, source])
+
+  // While the button is held, every frame the video lands on gets a blur at
+  // the pointer, so a face can be followed by hand during playback.
+  useEffect(() => {
+    const stroke = drawing.current
+    const at = lastPointer.current
+    if (!stroke || !at) return
+    if (stroke.some((op) => op.frame === frame)) return
+    const op = createOperation(frame, at.x, at.y, radius, sigma)
+    stroke.push(op)
+    setOps((o) => [...o, op])
+  }, [frame, radius, sigma])
 
   const undoStroke = () => {
     setStrokes((s) => {
@@ -121,7 +134,9 @@ export function SmudgePage() {
   }
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if ((e.target as HTMLElement)?.tagName === 'INPUT') return
+      const target = e.target as HTMLElement | null
+      const typing = target?.tagName === 'TEXTAREA' || target?.tagName === 'SELECT' || (target?.tagName === 'INPUT' && !['range', 'checkbox', 'button'].includes((target as HTMLInputElement).type))
+      if (typing) return
       if (!source) return
       if (e.key === ' ') {
         e.preventDefault()
@@ -145,8 +160,8 @@ export function SmudgePage() {
 
   const onPointerDown = (e: PointerEvent<HTMLCanvasElement>) => {
     if (!source) return
-    setPlaying(false)
     const { x, y } = toFrameCoords(e)
+    lastPointer.current = { x, y }
     const op = createOperation(frame, x, y, radius, sigma)
     drawing.current = [op]
     setOps((o) => [...o, op])
@@ -154,6 +169,7 @@ export function SmudgePage() {
   }
   const onPointerMove = (e: PointerEvent<HTMLCanvasElement>) => {
     const { x, y } = toFrameCoords(e)
+    lastPointer.current = { x, y }
     setCursor({ x, y })
     const stroke = drawing.current
     if (!stroke || !canvasRef.current) return
