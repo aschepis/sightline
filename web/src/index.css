@@ -60,6 +60,13 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 1
 .nav-item:hover { background: var(--panel-raised); }
 .nav-item.active { background: var(--accent); color: #fff; }
 .sidebar .spacer { flex: 1; }
+.kofi {
+  display: block; text-align: center; text-decoration: none; color: #fff; background: #72a4f2;
+  border-radius: 999px; padding: 8px 12px; font-weight: 600; margin-bottom: 10px;
+}
+.kofi:hover { filter: brightness(1.08); }
+.transcript .line.clickable { cursor: pointer; }
+.transcript .line.clickable:hover { outline: 1px solid var(--accent); }
 .main { padding: 24px 32px; max-width: 1200px; width: 100%; }
 .page-header { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
 

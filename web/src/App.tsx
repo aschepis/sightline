@@ -49,6 +49,9 @@ export default function App() {
           </button>
         ))}
         <div className="spacer" />
+        <a className="kofi" href="https://ko-fi.com/N4N8U0J6M" target="_blank" rel="noopener noreferrer">
+          ♥ Support Sightline on Ko-fi
+        </a>
         <div className="small muted">
           {caps ? (
             <>

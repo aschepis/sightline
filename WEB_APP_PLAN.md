@@ -404,3 +404,7 @@ Fixes after the first deploy (2026-09-25, later the same day):
   three-speaker clip where 0.45 collapsed everyone into one speaker.
 - All user-facing copy now says in plain words that files stay on the
   user's computer and are never uploaded.
+- Transcript view lets the user name each detected speaker; names are used in
+  the view and in the txt, srt and json downloads, and are remembered per file.
+- Ko-fi support link in the app sidebar and landing page footer, as a plain
+  link rather than Ko-fi's widget script so the app makes no third-party requests.

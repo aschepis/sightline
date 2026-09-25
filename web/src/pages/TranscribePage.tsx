@@ -1,11 +1,11 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { DropZone } from '../components/DropZone'
 import { JobTable } from '../components/JobTable'
 import { engine } from '../engine'
 import { useCapabilities, useConfig, useJobs } from '../engine/hooks'
 import type { Job } from '../engine/types'
 import { downloadBlob, isAudioFile, isVideoFile, outputFilename } from '../lib/files'
-import { toJson, toSrt, toText } from '../transcribe/format'
+import { displayName, renameSpeakers, speakerLabels, toJson, toSrt, toText, type SpeakerNames } from '../transcribe/format'
 import { WHISPER_MODELS, type TranscriptResult } from '../transcribe/types'
 
 const LANGUAGES = [
@@ -38,11 +38,26 @@ export function TranscribePage() {
   }
   const pending = jobs.filter((j) => j.status === 'pending').length
   const result = viewing?.output?.kind === 'transcribe' ? viewing.output.result : null
+  const [names, setNames] = useState<SpeakerNames>({})
+  const nameInputs = useRef<Record<string, HTMLInputElement | null>>({})
+
+  // Names are remembered per file so a re-run does not mean retyping them.
+  const openTranscript = (job: Job) => {
+    setNames(loadSpeakerNames(job.request.file.name))
+    setViewing(job)
+  }
+  const setName = (label: string, value: string) => {
+    if (!viewing) return
+    const next = { ...names, [label]: value }
+    setNames(next)
+    saveSpeakerNames(viewing.request.file.name, next)
+  }
 
   const save = (format: 'txt' | 'srt' | 'json') => {
     if (!viewing || !result) return
     const name = viewing.request.file.name
-    const content = format === 'txt' ? toText(result, name) : format === 'srt' ? toSrt(result) : toJson(result)
+    const named = renameSpeakers(result, names)
+    const content = format === 'txt' ? toText(named, name) : format === 'srt' ? toSrt(named) : toJson(result, names)
     downloadBlob(new Blob([content], { type: 'text/plain' }), outputFilename(name, '_transcript', `.${format}`))
   }
 
@@ -104,7 +119,7 @@ export function TranscribePage() {
       </div>
       <div className="panel">
         <h3>Queue</h3>
-        <JobTable jobs={jobs} onOpen={setViewing} />
+        <JobTable jobs={jobs} onOpen={openTranscript} />
       </div>
       {viewing && result && (
         <div className="panel stack">
@@ -123,26 +138,78 @@ export function TranscribePage() {
               </button>
             </div>
           </div>
-          <TranscriptView result={result} />
+          {speakerLabels(result).length > 0 && (
+            <div className="stack">
+              <h3>Who is speaking?</h3>
+              <p className="muted small">Type a name for each speaker. The names are used in the transcript below and in every saved file. Click a line to jump to its speaker.</p>
+              <div className="row">
+                {speakerLabels(result).map((label) => (
+                  <label className="field" key={label}>
+                    {label}
+                    <input
+                      type="text"
+                      placeholder="Name"
+                      value={names[label] ?? ''}
+                      ref={(el) => {
+                        nameInputs.current[label] = el
+                      }}
+                      onChange={(e) => setName(label, e.target.value)}
+                      style={{ width: 160 }}
+                    />
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+          <TranscriptView
+            result={result}
+            names={names}
+            onPickSpeaker={(label) => {
+              const input = nameInputs.current[label]
+              input?.focus()
+              input?.select()
+            }}
+          />
         </div>
       )}
     </>
   )
 }
 
-function TranscriptView({ result }: { result: TranscriptResult }) {
+function TranscriptView({ result, names, onPickSpeaker }: { result: TranscriptResult; names: SpeakerNames; onPickSpeaker: (label: string) => void }) {
   if (result.segments.length === 0) return <p>{result.text || 'No speech detected.'}</p>
   return (
     <div className="transcript">
       {result.segments.map((s, i) => (
-        <div className="line" key={i}>
+        <div className={`line ${s.speaker ? 'clickable' : ''}`} key={i} onClick={() => s.speaker && onPickSpeaker(s.speaker)} title={s.speaker ? `Name ${s.speaker}` : undefined}>
           <span className="time">
             {s.start.toFixed(2)}–{s.end.toFixed(2)}
           </span>
-          <span className="speaker">{s.speaker ?? ''}</span>
+          <span className="speaker">{s.speaker ? displayName(s.speaker, names) : ''}</span>
           <span>{s.text}</span>
         </div>
       ))}
     </div>
   )
+}
+
+const NAMES_KEY = 'sightline.speakerNames.v1'
+
+function loadSpeakerNames(fileName: string): SpeakerNames {
+  try {
+    const all = JSON.parse(localStorage.getItem(NAMES_KEY) ?? '{}') as Record<string, SpeakerNames>
+    return all[fileName] ?? {}
+  } catch {
+    return {}
+  }
+}
+
+function saveSpeakerNames(fileName: string, names: SpeakerNames): void {
+  try {
+    const all = JSON.parse(localStorage.getItem(NAMES_KEY) ?? '{}') as Record<string, SpeakerNames>
+    all[fileName] = names
+    localStorage.setItem(NAMES_KEY, JSON.stringify(all))
+  } catch {
+    // Storage may be blocked; names then last for the session only.
+  }
 }

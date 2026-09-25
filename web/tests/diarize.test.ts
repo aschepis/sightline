@@ -62,3 +62,27 @@ describe('word to segment pipeline', () => {
     expect(srt).toContain('00:00:00,000 --> 00:00:00,800')
   })
 })
+
+describe('speaker names', () => {
+  it('applies typed names to text, srt and json output', async () => {
+    const { renameSpeakers, toJson, speakerLabels } = await import('../src/transcribe/format')
+    const result = {
+      language: 'en',
+      text: '',
+      durationSeconds: 2,
+      model: 'x',
+      turns: [{ start: 0, end: 1, speaker: 'SPEAKER_00' }],
+      segments: [{ start: 0, end: 1, text: 'Hi.', speaker: 'SPEAKER_00', words: [{ text: 'Hi.', start: 0, end: 1, speaker: 'SPEAKER_00' }] }],
+    }
+    expect(speakerLabels(result)).toEqual(['SPEAKER_00'])
+    const named = renameSpeakers(result, { SPEAKER_00: 'Maria' })
+    expect(toText(named, 'a.wav')).toContain('Maria: Hi.')
+    expect(toSrt(named)).toContain('[Maria] Hi.')
+    const json = JSON.parse(toJson(result, { SPEAKER_00: 'Maria' }))
+    expect(json.segments[0].speaker).toBe('Maria')
+    expect(json.segments[0].speakerId).toBe('SPEAKER_00')
+    expect(json.speakerNames).toEqual({ SPEAKER_00: 'Maria' })
+    // Blank names fall back to the machine label.
+    expect(toText(renameSpeakers(result, { SPEAKER_00: '  ' }), 'a.wav')).toContain('SPEAKER_00: Hi.')
+  })
+})

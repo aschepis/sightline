@@ -598,3 +598,14 @@ footer a:hover {
     display: none;
   }
 }
+
+.kofi-link {
+  display: inline-block;
+  background: #72a4f2;
+  color: #fff !important;
+  padding: 0.6rem 1.4rem;
+  border-radius: 999px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.kofi-link:hover { filter: brightness(1.08); }
