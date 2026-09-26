@@ -34,10 +34,7 @@ export function HomePage({ go }: { go: (r: Route) => void }) {
           your browser. That download is the only time the app talks to the internet. Your photos, videos and recordings are opened and edited right here and are never sent
           anywhere. When a job finishes, you choose where to save the result.
         </p>
-        <p className="muted small">
-          Sightline can be installed like an app from your browser's menu. An optional "send to my own server" mode exists in <a href="#/settings">Settings</a> for very large
-          jobs; it is off unless you turn it on.
-        </p>
+        <p className="muted small">Sightline can be installed like an app from your browser's menu.</p>
       </div>
     </>
   )

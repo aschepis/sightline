@@ -32,13 +32,12 @@ export interface Job {
   finishedAt?: number
 }
 
-export type Backend = 'webgpu' | 'wasm' | 'remote'
+export type Backend = 'webgpu' | 'wasm'
 
 /**
- * An executor runs one job to completion. The browser has a local executor;
- * a remote executor sends the same request to a server running the Python
- * core. Every feature must be implementable on both so nothing depends on
- * browser limits.
+ * An executor runs one job to completion. Everything runs on the user's
+ * device; the interface exists so jobs stay independent of where the work
+ * happens.
  */
 export interface Executor {
   readonly name: string

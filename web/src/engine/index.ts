@@ -2,7 +2,6 @@ import { probeCapabilities, type Capabilities } from '../lib/capabilities'
 import { loadConfig, saveConfig, type AppConfig } from '../lib/config'
 import { LocalExecutor, chooseBackend } from './local'
 import { JobQueue } from './queue'
-import { RemoteExecutor } from './remote'
 import type { Executor } from './types'
 
 type ConfigListener = (config: AppConfig) => void
@@ -16,7 +15,6 @@ class Engine {
   capabilities: Capabilities | null = null
   readonly queue: JobQueue
   private local = new LocalExecutor('wasm')
-  private remote = new RemoteExecutor(this.config.remoteEndpoint)
   private configListeners = new Set<ConfigListener>()
   readonly ready: Promise<void>
 
@@ -32,7 +30,6 @@ class Engine {
     this.config = typeof patch === 'function' ? patch(this.config) : { ...this.config, ...patch }
     saveConfig(this.config)
     this.queue.concurrency = this.config.batchSize
-    this.remote = new RemoteExecutor(this.config.remoteEndpoint)
     this.applyExecutor()
     for (const l of this.configListeners) l(this.config)
   }
@@ -46,19 +43,14 @@ class Engine {
     return this.queue['executor' as keyof JobQueue] as unknown as Executor
   }
 
-  activeBackend(): 'webgpu' | 'wasm' | 'remote' {
+  activeBackend(): 'webgpu' | 'wasm' {
     if (!this.capabilities) return 'wasm'
     return chooseBackend(this.config.execution, this.capabilities)
   }
 
   private applyExecutor(): void {
     if (!this.capabilities) return
-    const backend = chooseBackend(this.config.execution, this.capabilities)
-    if (backend === 'remote' && this.remote.supports()) {
-      this.queue.setExecutor(this.remote)
-      return
-    }
-    this.local.setBackend(backend === 'remote' ? 'wasm' : backend)
+    this.local.setBackend(chooseBackend(this.config.execution, this.capabilities))
     this.queue.setExecutor(this.local)
   }
 }

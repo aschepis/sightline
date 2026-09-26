@@ -1,9 +1,8 @@
 # Sightline Web
 
 Browser version of Sightline. Face blurring, manual smudging and transcription
-run on the user's device in Web Workers; nothing is uploaded unless the user
-configures a remote executor in Settings. See `../WEB_APP_PLAN.md` for the
-architecture and hosting options.
+run on the user's device in Web Workers; nothing is ever uploaded. See
+`../WEB_APP_PLAN.md` for the architecture and hosting options.
 
 ## Develop
 
@@ -32,8 +31,7 @@ header-injecting service worker) would restore multi-threading.
 
 ## Layout
 
-- `src/engine/` job queue and executors. `LocalExecutor` runs jobs in workers;
-  `RemoteExecutor` speaks the small HTTP contract from the plan.
+- `src/engine/` job queue and the `LocalExecutor` that runs jobs in workers.
 - `src/faceblur/` port of deface's CenterFace decoding and masking, ONNX
   Runtime Web detector, and the media worker.
 - `src/video/` mp4box demux, WebCodecs decode/encode, mp4-muxer output.

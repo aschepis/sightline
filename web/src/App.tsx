@@ -61,9 +61,9 @@ export default function App() {
         <div className="small muted">
           {caps ? (
             <>
-              {engine.activeBackend() === 'remote' ? 'Sending files to your server' : 'Working on this computer'}
+              Working on this computer
               <br />
-              {engine.activeBackend() === 'webgpu' ? 'Using the graphics card' : engine.activeBackend() === 'wasm' ? 'Using the main processor' : ''}
+              {engine.activeBackend() === 'webgpu' ? 'Using the graphics card' : 'Using the main processor'}
               <br />
               {caps.webcodecs ? 'Video editing available' : 'Video needs a newer browser'}
             </>

@@ -7,7 +7,6 @@ import type { TranscribeWorkerEvent, TranscribeWorkerRequest } from '../transcri
 import type { Backend, Executor, JobOutput, JobProgress, JobRequest } from './types'
 
 export function chooseBackend(preference: ExecutionPreference, caps: Capabilities): Backend {
-  if (preference === 'remote') return 'remote'
   if (preference === 'wasm') return 'wasm'
   return caps.webgpu ? 'webgpu' : 'wasm'
 }
@@ -21,13 +20,13 @@ export class LocalExecutor implements Executor {
   readonly name = 'local'
   private transcribeWorker: Worker | null = null
 
-  private backend: Exclude<Backend, 'remote'>
+  private backend: Backend
 
-  constructor(backend: Exclude<Backend, 'remote'>) {
+  constructor(backend: Backend) {
     this.backend = backend
   }
 
-  setBackend(backend: Exclude<Backend, 'remote'>): void {
+  setBackend(backend: Backend): void {
     if (backend !== this.backend) {
       this.backend = backend
       this.transcribeWorker?.terminate()

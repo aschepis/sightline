@@ -408,3 +408,9 @@ Fixes after the first deploy (2026-09-25, later the same day):
   the view and in the txt, srt and json downloads, and are remembered per file.
 - Ko-fi support link in the app sidebar and landing page footer, as a plain
   link rather than Ko-fi's widget script so the app makes no third-party requests.
+
+Decision (2026-09-26): the remote executor is removed, client and all.
+Sections 3, 5.2, 5.3 and phase 5 above describe an option that no longer
+exists in the code. Every job runs on the user's device; anything the
+browser cannot do (WebM/MKV/AVI input, container metadata) is a browser
+feature to add, not a reason to upload files.

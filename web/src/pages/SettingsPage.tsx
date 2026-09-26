@@ -20,16 +20,8 @@ export function SettingsPage() {
                 On this computer, using the graphics card
               </option>
               <option value="wasm">On this computer, using the main processor only</option>
-              <option value="remote" disabled={!config.remoteEndpoint}>
-                On my own server (uploads your files there)
-              </option>
             </select>
           </label>
-          <label className="field">
-            Address of your own Sightline server <span className="small">optional. Leave empty to keep everything on this computer.</span>
-            <input type="url" placeholder="https://api.sightline.example" value={config.remoteEndpoint} onChange={(e) => update({ remoteEndpoint: e.target.value })} />
-          </label>
-          {config.execution === 'remote' && <div className="notice">Your files will be uploaded to {config.remoteEndpoint} for processing. Only use a server you run yourself.</div>}
           <label className="field">
             Parallel jobs
             <input type="number" min={1} max={8} value={config.batchSize} onChange={(e) => update({ batchSize: Math.max(1, Math.min(8, Number(e.target.value) || 1)) })} style={{ width: 70 }} />

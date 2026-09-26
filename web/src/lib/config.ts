@@ -1,7 +1,7 @@
 import type { FaceBlurOptions } from '../faceblur/options'
 import { DEFAULT_FACE_BLUR_OPTIONS } from '../faceblur/options'
 
-export type ExecutionPreference = 'auto' | 'webgpu' | 'wasm' | 'remote'
+export type ExecutionPreference = 'auto' | 'webgpu' | 'wasm'
 
 export interface SmudgeConfig {
   blurRadius: number
@@ -24,7 +24,6 @@ export interface AppConfig {
   faceBlur: FaceBlurOptions
   smudge: SmudgeConfig
   transcription: TranscriptionConfig
-  remoteEndpoint: string
 }
 
 // Mirrors config_manager.get_default_config() in the desktop app.
@@ -40,7 +39,6 @@ export const DEFAULT_CONFIG: AppConfig = {
     numSpeakers: null,
     outputFormat: 'txt',
   },
-  remoteEndpoint: '',
 }
 
 const STORAGE_KEY = 'sightline.config.v1'
@@ -50,6 +48,8 @@ export function loadConfig(): AppConfig {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return structuredClone(DEFAULT_CONFIG)
     const parsed = JSON.parse(raw) as Partial<AppConfig>
+    // Older saved configs may hold values from removed options.
+    if (parsed.execution && !['auto', 'webgpu', 'wasm'].includes(parsed.execution)) parsed.execution = 'auto'
     return {
       ...structuredClone(DEFAULT_CONFIG),
       ...parsed,
