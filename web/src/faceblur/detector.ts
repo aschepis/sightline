@@ -6,7 +6,7 @@ import { detectorInputSize } from './options'
 
 export type DetectorBackend = 'webgpu' | 'wasm'
 
-const MODEL_URL = new URL('models/centerface.onnx', globalThis.location?.origin ? `${globalThis.location.origin}${import.meta.env.BASE_URL}` : 'http://localhost/').href
+export const MODEL_URL = new URL('models/centerface.onnx', globalThis.location?.origin ? `${globalThis.location.origin}${import.meta.env.BASE_URL}` : 'http://localhost/').href
 const INPUT_NAME = 'input.1'
 const OUTPUT_NAMES = ['537', '538', '539', '540']
 
@@ -72,4 +72,9 @@ export class FaceDetector {
     await this.session?.release()
     this.session = null
   }
+}
+
+/** Fetches the detector model into the browser cache without running it. */
+export async function preloadFaceDetector(onProgress?: (loaded: number, total: number) => void): Promise<void> {
+  await cachedFetch(MODEL_URL, onProgress)
 }

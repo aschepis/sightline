@@ -5,12 +5,16 @@ import { EMBEDDING_MODEL, SEGMENTATION_MODEL, type SpeakerTurn, type TranscribeO
 import { TARGET_SAMPLE_RATE } from './audio'
 import { ORT_WASM_PATHS } from '../lib/ortPaths'
 
-export type TranscribeWorkerRequest = { type: 'transcribe'; id: string; audio: Float32Array; options: TranscribeOptions; backend: 'webgpu' | 'wasm' }
+export type TranscribeWorkerRequest =
+  | { type: 'transcribe'; id: string; audio: Float32Array; options: TranscribeOptions; backend: 'webgpu' | 'wasm' }
+  /** Download a Whisper model, or the speaker models, into the browser cache ahead of time. */
+  | { type: 'preload'; id: string; model: string | 'speakers'; backend: 'webgpu' | 'wasm' }
 
 export type TranscribeWorkerEvent =
   | { type: 'progress'; id: string; fraction: number; message?: string }
   | { type: 'log'; id: string; line: string }
   | { type: 'done'; id: string; result: TranscriptResult }
+  | { type: 'preloaded'; id: string }
   | { type: 'error'; id: string; message: string }
 
 const post = (event: TranscribeWorkerEvent) => self.postMessage(event)
@@ -23,13 +27,52 @@ env.backends.onnx.wasm!.wasmPaths = ORT_WASM_PATHS
 let asr: { key: string; instance: AutomaticSpeechRecognitionPipeline } | null = null
 
 self.onmessage = async (event: MessageEvent<TranscribeWorkerRequest>) => {
-  const { id, audio, options, backend } = event.data
+  const msg = event.data
   try {
-    const result = await transcribe(id, audio, options, backend)
-    post({ type: 'done', id, result })
+    if (msg.type === 'preload') {
+      await preload(msg.id, msg.model, msg.backend)
+      post({ type: 'preloaded', id: msg.id })
+      return
+    }
+    const result = await transcribe(msg.id, msg.audio, msg.options, msg.backend)
+    post({ type: 'done', id: msg.id, result })
   } catch (err) {
-    post({ type: 'error', id, message: err instanceof Error ? err.message : String(err) })
+    post({ type: 'error', id: msg.id, message: err instanceof Error ? err.message : String(err) })
   }
+}
+
+/** Byte-weighted progress across every file transformers.js reports for one download. */
+function downloadProgress(id: string) {
+  const files = new Map<string, { loaded: number; total: number }>()
+  return (p: { status: string; file?: string; loaded?: number; total?: number; progress?: number }) => {
+    if (!p.file) return
+    if (p.status === 'progress') files.set(p.file, { loaded: p.loaded ?? 0, total: p.total ?? 0 })
+    if (p.status === 'done') {
+      const f = files.get(p.file)
+      if (f) f.loaded = f.total
+    }
+    let loaded = 0
+    let total = 0
+    for (const f of files.values()) {
+      loaded += f.loaded
+      total += f.total
+    }
+    post({ type: 'progress', id, fraction: total > 0 ? loaded / total : 0, message: `${p.file.split('/').pop()} ${Math.round(p.progress ?? 0)}%` })
+  }
+}
+
+async function preload(id: string, model: string | 'speakers', backend: 'webgpu' | 'wasm'): Promise<void> {
+  const progress = downloadProgress(id)
+  if (model === 'speakers') {
+    await AutoProcessor.from_pretrained(SEGMENTATION_MODEL, { progress_callback: progress })
+    const seg = await AutoModelForAudioFrameClassification.from_pretrained(SEGMENTATION_MODEL, { device: 'wasm', dtype: 'fp32', progress_callback: progress })
+    await AutoProcessor.from_pretrained(EMBEDDING_MODEL, { progress_callback: progress })
+    const emb = await AutoModel.from_pretrained(EMBEDDING_MODEL, { device: 'wasm', dtype: 'fp32', progress_callback: progress })
+    await Promise.all([seg.dispose(), emb.dispose()])
+    return
+  }
+  const instance = await pipeline('automatic-speech-recognition', model, { device: backend, dtype: dtypeFor(model, backend), progress_callback: progress })
+  await instance.dispose()
 }
 
 function dtypeFor(model: string, backend: 'webgpu' | 'wasm') {

@@ -47,11 +47,12 @@ export interface WhisperModelChoice {
 }
 
 // The _timestamped exports include cross-attention outputs, which is what
-// gives word-level timestamps for speaker assignment.
+// gives word-level timestamps for speaker assignment. Sizes are the WebGPU
+// (fp32) downloads measured in Chrome; the WebAssembly q8 files are about a third.
 export const WHISPER_MODELS: WhisperModelChoice[] = [
-  { id: 'onnx-community/whisper-tiny_timestamped', label: 'Whisper tiny (fastest)', approxSize: '~40 MB', multilingual: true },
-  { id: 'onnx-community/whisper-base_timestamped', label: 'Whisper base (desktop default)', approxSize: '~80 MB', multilingual: true },
-  { id: 'onnx-community/whisper-small_timestamped', label: 'Whisper small', approxSize: '~250 MB', multilingual: true },
+  { id: 'onnx-community/whisper-tiny_timestamped', label: 'Whisper tiny (fastest)', approxSize: '~150 MB', multilingual: true },
+  { id: 'onnx-community/whisper-base_timestamped', label: 'Whisper base (desktop default)', approxSize: '~280 MB', multilingual: true },
+  { id: 'onnx-community/whisper-small_timestamped', label: 'Whisper small', approxSize: '~950 MB', multilingual: true },
   { id: 'onnx-community/whisper-large-v3-turbo_timestamped', label: 'Whisper large-v3 turbo (best, WebGPU)', approxSize: '~800 MB', multilingual: true },
 ]
 
