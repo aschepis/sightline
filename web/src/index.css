@@ -59,6 +59,8 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 1
 }
 .nav-item:hover { background: var(--panel-raised); }
 .nav-item.active { background: var(--accent); color: #fff; }
+.nav-link { display: flex; align-items: center; gap: 8px; text-decoration: none; color: var(--muted); font-size: 13px; }
+.nav-link:hover { color: var(--text); }
 .sidebar .spacer { flex: 1; }
 .kofi {
   display: block; text-align: center; text-decoration: none; color: #fff; background: #72a4f2;
