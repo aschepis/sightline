@@ -1,5 +1,6 @@
 import { ArrayBufferTarget, Muxer } from 'mp4-muxer'
 import type { AudioTrackIndex, SampleReader } from './demux'
+import { decodeTimestamps } from './dts'
 
 type MuxCodec = 'avc' | 'hevc' | 'vp9' | 'av1'
 
@@ -47,6 +48,9 @@ export class VideoWriter {
   private encoder!: VideoEncoder
   private encodeError: Error | null = null
   private frameCount = 0
+  // Encoded chunks are held until finish() so decode times can be derived
+  // once the encoder's reorder delay is known (see dts.ts).
+  private chunks: Array<{ data: Uint8Array; type: 'key' | 'delta'; timestamp: number; duration: number; meta?: EncodedVideoChunkMetadata }> = []
   private audioMode: 'copy' | 'reencode' | 'none' = 'none'
   private audioCodec: 'aac' | 'opus' = 'aac'
 
@@ -69,7 +73,11 @@ export class VideoWriter {
       firstTimestampBehavior: 'offset',
     })
     this.encoder = new VideoEncoder({
-      output: (chunk, meta) => this.muxer.addVideoChunk(chunk, meta),
+      output: (chunk, meta) => {
+        const data = new Uint8Array(chunk.byteLength)
+        chunk.copyTo(data)
+        this.chunks.push({ data, type: chunk.type, timestamp: chunk.timestamp, duration: chunk.duration ?? 0, meta })
+      },
       error: (e) => {
         this.encodeError = e instanceof Error ? e : new Error(String(e))
       },
@@ -173,12 +181,31 @@ export class VideoWriter {
     if (failure) throw failure
   }
 
-  async finish(): Promise<Blob> {
+  /** Flushes the encoder and writes the video track; call before writeAudio(). */
+  async finishVideo(): Promise<void> {
+    if (this.encoder.state === 'closed') return
     await this.encoder.flush()
     if (this.encodeError) throw this.encodeError
     this.encoder.close()
+    this.writeVideoChunks()
+  }
+
+  async finish(): Promise<Blob> {
+    await this.finishVideo()
     this.muxer.finalize()
     return new Blob([this.muxer.target.buffer], { type: 'video/mp4' })
+  }
+
+  private writeVideoChunks(): void {
+    const dts = decodeTimestamps(this.chunks.map((c) => c.timestamp))
+    let reordered = 0
+    this.chunks.forEach((c, i) => {
+      const offset = c.timestamp - dts[i]
+      if (offset !== 0) reordered += 1
+      this.muxer.addVideoChunkRaw(c.data, c.type, c.timestamp, c.duration, i === 0 ? c.meta : undefined, offset)
+    })
+    if (reordered > 0) this.options.log?.(`Encoder used B-frames; wrote decode times for ${reordered} reordered chunks`)
+    this.chunks = []
   }
 
   abort(): void {

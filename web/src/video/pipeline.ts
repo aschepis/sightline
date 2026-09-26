@@ -67,6 +67,7 @@ export async function processVideo(file: File, options: ProcessVideoOptions): Pr
       options.signal,
     )
     options.onProgress?.(0.96, 'Writing audio')
+    await writer.finishVideo()
     await writer.writeAudio(new SampleReader(file), options.signal)
     options.onProgress?.(0.98, 'Finalizing')
     return await writer.finish()
